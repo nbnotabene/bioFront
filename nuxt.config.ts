@@ -8,15 +8,34 @@ export default defineNuxtConfig({
 		port: 3000
 	},
 	devtools: { enabled: true },
+	app: {
+		head: {
+			link: [
+				{ rel: 'icon', href: '/favicon.ico', type: 'image/x-icon' },
+				{ rel: 'stylesheet', href: 'https://fonts.googleapis.com/icon?family=Material+Icons' }
+			]
+		}
+	},
 
 	modules: [
 		'@nuxtjs/tailwindcss',
 		'@primevue/nuxt-module'
 	],
+	tailwindcss: {
+		cssPath: '~/assets/css/tailwind.css'
+	},
 	primevue: {
 		options: {
 			theme: {
 				preset: Aura // Other options include Lara or Nora from @primeuix/themes
+			}
+		}
+	},
+	runtimeConfig: {
+		public: {
+			nbapi: {
+				// Override in dev/prod via NUXT_PUBLIC_NBAPI_API_BASE
+				apiBase: 'https://local.nbinfo.eu/nbapi'
 			}
 		}
 	},

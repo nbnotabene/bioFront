@@ -96,7 +96,8 @@ npm test
 
 # Statisk build
 npx nuxi generate     # output i .output/public
-npm run preview       # preview af det statiske build
+npx serve .output/public 
+# npm run preview       # preview af det statiske build
 ```
 
 ## Konfiguration

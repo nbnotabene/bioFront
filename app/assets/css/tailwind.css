@@ -1,0 +1,506 @@
+@import url(https://fonts.googleapis.com/css?family=Raleway);
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Ported from kultlib v1 (webroot/css/basic.css, header.css, overlay.css, films.css, arr.css, page.css, inforow.css) ── */
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  overflow-y: scroll;
+  height: 100%;
+  width: 100%;
+  /* White page background — shows as side margins once .container is capped/centered on wide screens */
+  background-color: #fff;
+  font: 1.0em Lato, arial, sans-serif;
+  color: #f08c00;
+}
+
+body {
+  overflow-x: hidden;
+}
+
+i.material-icons {
+  min-width: 18px;
+  width: 22px;
+}
+
+.ctastarter i.material-icons {
+  vertical-align: middle;
+}
+
+a:link,
+a:visited {
+  text-decoration: none;
+  color: #f08c00;
+}
+
+#footer a {
+  color: #fff;
+}
+
+h1 {
+  margin-block-start: 5px;
+  margin-block-end: 0;
+  color: #f08c00;
+}
+
+h2 {
+  vertical-align: center;
+  text-align: center;
+}
+
+h3 {
+  background-color: #f08c00;
+  color: #fff;
+  text-align: center;
+  margin: 0;
+  padding: 20px 20px 0 20px;
+  height: 4.2em;
+}
+
+/* ── Base layout / footer ── */
+
+div.container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  width: 100%;
+  background-color: #000;
+}
+
+/* On very wide screens, cap the content width and center it — the white body background shows through as side margins */
+@media (min-width: 1600px) {
+  div.container {
+    max-width: 1600px;
+    margin: 0 auto;
+    box-shadow: 0 0 24px rgba(0, 0, 0, 0.25);
+  }
+}
+
+#content {
+  flex: 1;
+}
+
+#footer {
+  flex-shrink: 0;
+  text-align: center;
+  padding: 1em 0;
+}
+
+div.page {
+  margin-top: 2em;
+  margin-left: 2em;
+  color: #fff;
+}
+
+/* ── Header / nav ── */
+
+header {
+  width: 100%;
+  background-color: #fff;
+  z-index: 1000;
+  height: 50px;
+}
+
+nav.top-nav {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 1rem;
+  background-color: #fff;
+  height: 50px;
+}
+
+.left {
+  padding-top: 0;
+  width: 40%;
+  text-align: left;
+}
+
+.center {
+  width: 20%;
+  text-align: center;
+}
+
+.right {
+  width: 40%;
+  text-align: right;
+  padding-right: 3em;
+}
+
+#biologo,
+#navright {
+  padding-top: 7px;
+}
+
+div#biologo img {
+  height: 50px;
+}
+
+/* ── Full-screen overlay menu ── */
+
+.overlay {
+  height: 100%;
+  width: 0;
+  position: fixed;
+  z-index: 1100;
+  top: 0;
+  left: 0;
+  background-color: rgba(0, 0, 0, 0.9);
+  overflow-x: hidden;
+  transition: 0.5s;
+}
+
+.overlay-content {
+  position: relative;
+  top: 25%;
+  width: 100%;
+  text-align: center;
+  margin-top: 30px;
+}
+
+.overlay a {
+  padding: 8px;
+  text-decoration: none;
+  font-size: 36px;
+  color: #818181;
+  display: block;
+  transition: 0.3s;
+}
+
+.overlay a:hover,
+.overlay a:focus {
+  color: #f1f1f1;
+}
+
+.overlay .closebtn {
+  position: absolute;
+  top: 20px;
+  right: 45px;
+  font-size: 60px;
+}
+
+@media screen and (max-height: 450px) {
+  .overlay a {
+    font-size: 20px;
+  }
+
+  .overlay .closebtn {
+    font-size: 40px;
+    top: 15px;
+    right: 35px;
+  }
+}
+
+/* ── Info banner ── */
+
+.inforow {
+  background-color: #ffe0b2;
+  color: #333;
+  padding: 10px 20px;
+  margin: 10px 0;
+  border: 1px solid #ffcc80;
+  border-radius: 4px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: opacity 0.5s ease-out;
+}
+
+.inforow p {
+  margin: 0;
+  font-weight: bold;
+}
+
+.inforow button {
+  background-color: #ff9800;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 3px;
+  cursor: pointer;
+  margin-left: 15px;
+  flex-shrink: 0;
+}
+
+.inforow button:hover {
+  background-color: #fb8c00;
+}
+
+.inforow a {
+  color: #c62828;
+  font-weight: bold;
+  text-decoration: underline;
+  margin: 0 5px;
+}
+
+.inforow a:hover {
+  color: #880e4f;
+}
+
+/* ── Film grid (DataView) ── */
+
+#content,
+#content > div,
+.p-dataview,
+.p-dataview-content {
+  background: #000 !important;
+}
+
+.p-dataview {
+  padding: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
+}
+
+.p-dataview-content {
+  padding: 0 !important;
+}
+
+.film-grid {
+  list-style: none;
+  margin: 1em 2em;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  background: #000;
+}
+
+@media (max-width: 600px) {
+  .film-grid {
+    margin: 0;
+    padding-top: 1em;
+    gap: 8px;
+  }
+}
+
+.film-grid li {
+  border: 2px solid #ffe066;
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.film-card-link {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+  height: 100%;
+}
+
+.film-card.p-card {
+  height: 100%;
+  background: #111;
+  border: none;
+  border-radius: 0;
+  transition: box-shadow 0.2s;
+  display: flex;
+  flex-direction: column;
+  color: #f08c00;
+}
+
+.film-card.p-card:hover {
+  box-shadow: 0 4px 20px rgba(240, 140, 0, 0.4);
+}
+
+.film-card .p-card-header {
+  padding: 0;
+}
+
+.film-card .p-card-body {
+  padding: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: #111;
+}
+
+.film-card .p-card-content {
+  padding: 0.5rem;
+  flex: 1;
+  color: #ccc;
+}
+
+.film-poster {
+  width: 100%;
+  display: block;
+  object-fit: contain;
+  aspect-ratio: 2 / 3;
+}
+
+.start-date {
+  font: 1.0em Lato, arial, sans-serif;
+  color: #f08c00;
+}
+
+.start-dates {
+  margin-top: auto;
+  border-top: 1px solid #ffe066;
+  padding: 10px;
+  text-align: center;
+  height: 5em;
+}
+
+/* ── Arrangement detail page ── */
+
+.arr-page {
+  padding: 1.5rem;
+}
+
+.arr-loading {
+  display: flex;
+  justify-content: center;
+  padding: 3rem;
+}
+
+.arr-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  align-items: start;
+}
+
+@media (max-width: 640px), (max-width: 900px) and (orientation: portrait) {
+  .arr-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .arr-poster {
+    order: 2;
+  }
+}
+
+.arr-main {
+  min-width: 0;
+}
+
+.arr-main h1 {
+  margin-top: 0;
+}
+
+.arr-dates {
+  float: right;
+  margin-left: 1rem;
+  margin-bottom: 0.5rem;
+  text-align: right;
+}
+
+.arr-date {
+  display: block;
+  background: #fff;
+  color: #000;
+  border: 1px solid #ffe066;
+  border-radius: 4px;
+  padding: 3px 8px;
+  font-size: 0.85rem;
+  margin-bottom: 4px;
+  white-space: nowrap;
+}
+
+.arr-clearfix {
+  clear: both;
+}
+
+.arr-tags {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.arr-poster img {
+  width: 100%;
+  border-radius: 6px;
+  display: block;
+}
+
+.arr-beskrivelse,
+.arr-lang {
+  margin-top: 0.5rem;
+}
+
+.arr-tmdb-overview {
+  font-style: italic;
+}
+
+.arr-trailer-hint {
+  color: #fff;
+  font-size: 0.85rem;
+  margin-bottom: 0.4rem;
+}
+
+.video-embed {
+  position: relative;
+  padding-bottom: 56.25%;
+  height: 0;
+  overflow: hidden;
+  max-width: 100%;
+  cursor: pointer;
+}
+
+.video-embed iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.video-embed:fullscreen {
+  padding-bottom: 0;
+  width: 100vw;
+  height: 100vh;
+}
+
+.video-embed:fullscreen iframe {
+  position: static;
+  width: 100%;
+  height: 100%;
+}
+
+.arr-footer {
+  margin-top: 8em;
+}
+
+.arr-links,
+.arr-share {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.arr-links-label {
+  margin-right: 0.25rem;
+}
+
+.arr-link-tag {
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.arr-link-tag .p-tag {
+  background: #fff !important;
+  color: #000 !important;
+}
+
+.arr-link-tag:hover .p-tag {
+  background: #ffe066 !important;
+}
+
+.arr-notfound {
+  text-align: center;
+  padding: 3rem;
+  color: #888;
+}

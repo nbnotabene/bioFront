@@ -35,7 +35,7 @@ export default defineNuxtConfig({
 		public: {
 			nbapi: {
 				// Override in dev/prod via NUXT_PUBLIC_NBAPI_API_BASE
-				apiBase: 'https://local.nbinfo.eu/nbapi'
+				apiBase: 'https://nbapi.nbinfo.eu'
 			}
 		}
 	},

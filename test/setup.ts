@@ -22,7 +22,7 @@ const NuxtLinkStub = defineComponent({
 
 ;(globalThis as any).useRoute = vi.fn(() => ({ params: {} }))
 ;(globalThis as any).useRuntimeConfig = vi.fn(() => ({
-  public: { nbapi: { apiBase: 'https://local.nbinfo.eu/nbapi' } },
+  public: { nbapi: { apiBase: 'https://nbapi.nbinfo.eu' } },
 }))
 ;(globalThis as any).useNbapi = vi.fn()
 

@@ -39,7 +39,7 @@ Design-arven (farver, layout, header/overlay-menu) stammer fra `/home/nb/www/kul
 
 ## Datakilde: nbapi
 
-API'et er dokumenteret i `/home/nb/www/nbapi/README.md` og køres på `https://local.nbinfo.eu/nbapi` (docs: `https://local.nbinfo.eu/nbapi/docs`).
+API'et er dokumenteret i `/home/nb/www/nbapi/README.md` og køres på `https://nbapi.nbinfo.eu` (docs: `https://nbapi.nbinfo.eu/docs`). `GET`-endpoints er åbne for alle origins (CORS tilladt for `https://local.svanekebio.dk` og `https://svanekebio.dk`); skrivende endpoints er intranet- og token-begrænsede og bruges ikke af bioFront.
 
 | Endpoint | Bruges til |
 |---|---|
@@ -102,10 +102,10 @@ npx serve .output/public
 
 ## Konfiguration
 
-`nbapi`-base-URL'en er sat i `nuxt.config.ts` under `runtimeConfig.public.nbapi.apiBase` (default `https://local.nbinfo.eu/nbapi`) og kan overstyres uden rebuild via miljøvariablen:
+`nbapi`-base-URL'en er sat i `nuxt.config.ts` under `runtimeConfig.public.nbapi.apiBase` (default `https://nbapi.nbinfo.eu`) og kan overstyres uden rebuild via miljøvariablen:
 
 ```bash
-NUXT_PUBLIC_NBAPI_API_BASE=https://local.nbinfo.eu/nbapi npm run dev
+NUXT_PUBLIC_NBAPI_API_BASE=https://nbapi.nbinfo.eu npm run dev
 ```
 
 ## Test-cases

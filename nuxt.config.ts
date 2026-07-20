@@ -51,5 +51,19 @@ export default defineNuxtConfig({
 	ssr: true,
 	nitro: {
 		static: true
+	},
+	hooks: {
+		async 'nitro:config' (nitroConfig) {
+			const apiBase = nitroConfig.runtimeConfig?.public?.nbapi?.apiBase
+				|| process.env.NUXT_PUBLIC_NBAPI_API_BASE
+				|| 'https://nbapi.nbinfo.eu'
+
+			const pages = await fetch(`${apiBase}/pages`).then(r => r.json()) as { fname: string }[]
+			const pageRoutes = pages.map(p => `/pages/${p.fname.replace(/\.html$/, '')}`)
+
+			nitroConfig.prerender ||= {}
+			nitroConfig.prerender.routes ||= []
+			nitroConfig.prerender.routes.push(...pageRoutes)
+		}
 	}
 })

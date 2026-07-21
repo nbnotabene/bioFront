@@ -29,7 +29,7 @@
         </template>
 
         <template v-if="videoId">
-          <p class="arr-trailer-hint">Dobbeltklik for at se trailer "Fuld skærm" &mdash; Esc for at returnere!</p>
+		<!-- <p class="arr-trailer-hint">Dobbeltklik for at se trailer "Fuld skærm" &mdash; Esc for at returnere!</p> -->
           <VideoEmbed :video-id="videoId" />
         </template>
 

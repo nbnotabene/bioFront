@@ -1,5 +1,8 @@
 <template>
   <div ref="container" class="video-embed">
+    <button type="button" class="video-fullscreen-toggle" @click="handleClick">
+      Fullscreen
+    </button>
     <iframe
       ref="iframeEl"
       :src="embedUrl"
@@ -9,6 +12,34 @@
     />
   </div>
 </template>
+
+<style scoped>
+.video-embed {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+}
+
+.video-fullscreen-toggle {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 3;
+  padding: 0.35rem 0.7rem;
+  border: 0;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.video-embed iframe {
+  display: block;
+  width: 100%;
+  min-height: 240px;
+}
+</style>
 
 <script setup lang="ts">
 const props = defineProps<{ videoId: string | number }>()
@@ -24,22 +55,8 @@ const embedUrl = computed(() => {
     : `https://www.youtube.com/embed/${props.videoId}`
 })
 
-// Detect double-click inside iframe via window blur events:
-// each click inside the iframe steals focus → window.blur fires.
-// Two blur events while activeElement is the iframe within ~350ms = double-click.
-let dblClickTimer: ReturnType<typeof setTimeout> | null = null
-
-function onWindowBlur () {
-  if (document.activeElement !== iframeEl.value) return
-
-  if (dblClickTimer) {
-    clearTimeout(dblClickTimer)
-    dblClickTimer = null
-    toggleFullscreen()
-    window.focus()
-  } else {
-    dblClickTimer = setTimeout(() => { dblClickTimer = null }, 350)
-  }
+function handleClick () {
+  toggleFullscreen()
 }
 
 function toggleFullscreen () {
@@ -52,9 +69,7 @@ function toggleFullscreen () {
   }
 }
 
-onMounted(() => window.addEventListener('blur', onWindowBlur, true))
 onUnmounted(() => {
-  window.removeEventListener('blur', onWindowBlur, true)
-  if (dblClickTimer) clearTimeout(dblClickTimer)
+  // no-op kept for lifecycle symmetry
 })
 </script>

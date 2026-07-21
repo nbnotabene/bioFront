@@ -254,7 +254,15 @@ div#biologo img {
 }
 
 .film-card-header img {
-	align-self: flex-start;
+	display: block;
+	width: 100%;
+	height: auto;
+	max-width: 100%;
+	margin: 0;
+	padding: 0;
+	object-fit: contain;
+	object-position: top center;
+	align-self: stretch;
 }
 
 .film-card-content {
@@ -272,8 +280,11 @@ div#biologo img {
 	color: #fff;
 	text-align: center;
 	margin: 0;
-	padding: 20px 20px 0 20px;
-	height: 4.2em;
+	padding: 20px 20px 12px 20px;
+	min-height: 3.4em;
+	font-size: 1.15rem;
+	font-weight: 700;
+	line-height: 1.25;
 }
 
 .film-card .p-card-body {
@@ -293,7 +304,9 @@ div#biologo img {
 .film-poster {
 	width: 100%;
 	display: block;
+	max-width: 100%;
 	object-fit: contain;
+	object-position: top center;
 	aspect-ratio: 2 / 3;
 }
 
@@ -346,6 +359,9 @@ div#biologo img {
 
 .arr-main h1 {
 	margin-top: 0;
+	font-size: 1.75rem;
+	font-weight: 700;
+	line-height: 1.2;
 }
 
 .arr-dates {

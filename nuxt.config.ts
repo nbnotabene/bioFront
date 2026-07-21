@@ -1,3 +1,4 @@
+import process from 'node:process'
 import Aura from '@primeuix/themes/aura'
 
 // https://nuxt.com/docs/api/configuration/nuxt-config

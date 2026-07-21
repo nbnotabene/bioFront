@@ -12,6 +12,7 @@ export default defineNuxtConfig({
 		head: {
 			link: [
 				{ rel: 'icon', href: '/favicon.ico', type: 'image/x-icon' },
+				{ rel: 'manifest', href: '/manifest.webmanifest' },
 				{ rel: 'stylesheet', href: 'https://fonts.googleapis.com/icon?family=Material+Icons' }
 			]
 		}

@@ -29,6 +29,12 @@ server {
     root /home/nb/www/bioFront/.output/public;
     index index.html;
 
+    # Service Worker skal ALDRIG meges/caches af browser HTTP-cache
+    location = /sw.js {
+        add_header Cache-Control "no-cache, no-store, must-revalidate";
+        expires 0;
+    }
+
     location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
         expires max;
         log_not_found off;

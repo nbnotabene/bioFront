@@ -2,17 +2,21 @@
   <NuxtLink :to="`/arr/${group.arr_nr}`" class="film-card-link">
     <Card class="film-card">
       <template #header>
-        <h3>{{ group.title }}</h3>
-        <img
-          :src="group.poster_url || '/img/biologo.png'"
-          :alt="group.title || ''"
-          class="film-poster"
-        />
+        <div class="film-card-header">
+          <h3>{{ group.title }}</h3>
+          <img
+            :src="group.poster_url || '/img/biologo.png'"
+            :alt="group.title || ''"
+            class="film-poster"
+          />
+        </div>
       </template>
       <template #content>
-        <div class="start-dates">
-          <div v-for="showtime in group.showtimes" :key="showtime.arr_nr" class="start-date">
-            {{ formatStart(showtime.start) }}
+        <div class="film-card-content">
+          <div class="start-dates">
+            <div v-for="showtime in group.showtimes" :key="showtime.arr_nr" class="start-date">
+              {{ formatStart(showtime.start) }}
+            </div>
           </div>
         </div>
       </template>

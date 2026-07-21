@@ -1,0 +1,120 @@
+/* ── Base styles: HTML elements ── */
+
+* {
+	box-sizing: border-box;
+}
+
+html,
+body {
+	margin: 0;
+	padding: 0;
+	overflow-y: scroll;
+	height: 100%;
+	width: 100%;
+	background-color: #fff;
+	font: 1em Lato, arial, sans-serif;
+	color: #f08c00;
+}
+
+body {
+	overflow-x: hidden;
+}
+
+/* ── Typography ── */
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+	color: #f08c00;
+	margin: 0.5em 0;
+}
+
+h1 {
+	font-size: 2.5em;
+	font-weight: 700;
+	margin-block-start: 0.3em;
+	margin-block-end: 0.3em;
+}
+
+h2 {
+	font-size: 2em;
+	font-weight: 700;
+	text-align: center;
+	margin-block-start: 0.4em;
+	margin-block-end: 0.4em;
+}
+
+h3 {
+	font-size: 1.8em;
+	font-weight: 600;
+}
+
+h4 {
+	font-size: 1.5em;
+	font-weight: 600;
+}
+
+h5 {
+	font-size: 1.3em;
+	font-weight: 600;
+}
+
+h6 {
+	font-size: 1.1em;
+	font-weight: 600;
+}
+
+/* Reset headings inside card headers to default */
+.p-card-header h1,
+.p-card-header h2,
+.p-card-header h3,
+.p-card-header h4,
+.p-card-header h5,
+.p-card-header h6 {
+	font-size: 1em;
+	font-weight: 400;
+	margin: 0;
+	padding: 0;
+}
+
+/* Page content spacing */
+div.page p,
+div.page div {
+	margin: 0.5em 0;
+	padding: 0.25em 0;
+	line-height: 1.6;
+}
+
+a:link,
+a:visited,
+a:hover,
+a:focus,
+a:active {
+	text-decoration: none;
+	color: #f08c00;
+	transition: color 0.2s;
+}
+
+#footer a {
+	color: #fff;
+}
+
+#footer a:hover,
+#footer a:focus {
+	color: #ffe066;
+}
+
+i.material-icons {
+	min-width: 18px;
+	width: 22px;
+	vertical-align: middle;
+}
+
+button {
+	cursor: pointer;
+	font-size: inherit;
+	font-family: inherit;
+}

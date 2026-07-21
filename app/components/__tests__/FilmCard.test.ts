@@ -38,6 +38,14 @@ describe('FilmCard', () => {
     expect(wrapper.findAll('.start-date')).toHaveLength(2)
   })
 
+  it('uses dedicated layout containers for the card header and content', () => {
+    const wrapper = mount(FilmCard, { props: { group } })
+    expect(wrapper.find('.film-card-link').exists()).toBe(true)
+    expect(wrapper.find('.film-card').exists()).toBe(true)
+    expect(wrapper.find('.film-card-header').exists()).toBe(true)
+    expect(wrapper.find('.film-card-content').exists()).toBe(true)
+  })
+
   it('links to the earliest showtime\'s arrangement page', () => {
     const wrapper = mount(FilmCard, { props: { group } })
     const link = wrapper.find('a')

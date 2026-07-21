@@ -1,28 +1,28 @@
 {
-  "files.exclude": {
-    ".output": true,
-    ".nuxt": true,
-    "node_modules": true,
-    "dist": true
-  },
-  "search.exclude": {
-    ".output": true,
-    ".nuxt": true,
-    "node_modules": true,
-    "dist": true
-  },
-  "files.watcherExclude": {
-    "**/.output/**": true,
-    "**/.nuxt/**": true,
-    "**/node_modules/**": true,
-    "**/.git/**": true
-  },
-  "[typescript]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode",
-    "editor.formatOnSave": true
-  },
-  "[vue]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode",
-    "editor.formatOnSave": true
-  }
+	"files.exclude": {
+		".output": true,
+		".nuxt": true,
+		"node_modules": true,
+		"dist": true
+	},
+	"search.exclude": {
+		".output": true,
+		".nuxt": true,
+		"node_modules": true,
+		"dist": true
+	},
+	"files.watcherExclude": {
+		"**/.output/**": true,
+		"**/.nuxt/**": true,
+		"**/node_modules/**": true,
+		"**/.git/**": true
+	},
+	"[typescript]": {
+		"editor.defaultFormatter": "esbenp.prettier-vscode",
+		"editor.formatOnSave": true
+	},
+	"[vue]": {
+		"editor.defaultFormatter": "esbenp.prettier-vscode",
+		"editor.formatOnSave": true
+	}
 }

@@ -14,7 +14,12 @@
       <template #content>
         <div class="film-card-content">
           <div class="start-dates">
-            <div v-for="showtime in group.showtimes" :key="showtime.arr_nr" class="start-date">
+            <div
+              v-for="showtime in group.showtimes"
+              :key="showtime.arr_nr"
+              :class="['start-date', `arr-${showtime.arr_nr}`, `akt-${showtime.arr_nr}`, { 'is-3d': is3D(showtime) }]"
+            >
+              <img v-if="is3D(showtime)" src="/img/3d.svg" alt="3D" class="icon-3d" />
               {{ formatStart(showtime.start) }}
             </div>
           </div>
@@ -26,9 +31,14 @@
 
 <script setup lang="ts">
 import type { FilmGroup } from '~/composables/useFilmGroups'
+import type { Filmakt } from '~/composables/useNbapi'
 import Card from 'primevue/card'
 
 defineProps<{ group: FilmGroup }>()
+
+function is3D (showtime: Filmakt) {
+  return Boolean(showtime.extra && showtime.extra.toUpperCase().includes('3D'))
+}
 
 function formatStart (start: string) {
   const d = new Date(start)

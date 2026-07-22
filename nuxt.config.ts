@@ -52,7 +52,11 @@ export default defineNuxtConfig({
 	// This enforces Static Site Generation (SSG) mode
 	ssr: true,
 	nitro: {
-		static: true
+		static: true,
+	    prerender: {
+            concurrency: 1, // Reduces simultaneous API requests
+            failOnError: false // Prevents the build from failing entirely if routes crash
+        } 
 	},
 	hooks: {
 		async 'nitro:config' (nitroConfig) {
@@ -60,20 +64,29 @@ export default defineNuxtConfig({
 				|| process.env.NUXT_PUBLIC_NBAPI_API_BASE
 				|| 'https://nbapi.nbinfo.eu'
 
+			nitroConfig.prerender ||= {}
+			nitroConfig.prerender.routes ||= []
+
 			try {
-				const response = await fetch(`${apiBase}/pages`, { signal: AbortSignal.timeout(5000) })
-				if (!response.ok) {
-					throw new Error(`nbapi pages request failed with ${response.status}`)
+				const pagesResponse = await fetch(`${apiBase}/pages`, { signal: AbortSignal.timeout(5000) })
+				if (pagesResponse.ok) {
+					const pages = await pagesResponse.json() as { fname: string }[]
+					const pageRoutes = pages.map(p => `/pages/${p.fname.replace(/\.html$/, '')}`)
+					nitroConfig.prerender.routes.push(...pageRoutes)
 				}
-
-				const pages = await response.json() as { fname: string }[]
-				const pageRoutes = pages.map(p => `/pages/${p.fname.replace(/\.html$/, '')}`)
-
-				nitroConfig.prerender ||= {}
-				nitroConfig.prerender.routes ||= []
-				nitroConfig.prerender.routes.push(...pageRoutes)
 			} catch (error) {
 				console.warn('Could not prefetch page routes from nbapi during startup:', error)
+			}
+
+			try {
+				const filmaktResponse = await fetch(`${apiBase}/filmakt`, { signal: AbortSignal.timeout(5000) })
+				if (filmaktResponse.ok) {
+					const filmakt = await filmaktResponse.json() as { arr_nr: number }[]
+					const filmRoutes = filmakt.map(f => `/arr/${f.arr_nr}`)
+					nitroConfig.prerender.routes.push(...filmRoutes)
+				}
+			} catch (error) {
+				console.warn('Could not prefetch filmakt routes from nbapi during startup:', error)
 			}
 		}
 	}

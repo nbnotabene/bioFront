@@ -91,4 +91,21 @@ describe('arr/[id] page', () => {
     expect(iframe.exists()).toBe(true)
     expect(iframe.attributes('src')).toContain('vimeo.com')
   })
+
+  it('includes akt_nr class and 3D icon on arr-date when extra contains 3D', async () => {
+    const film3D = { ...mockFilm, arr_nr: 20164330, extra: '3D' }
+    ;(globalThis as any).useNbapi = vi.fn(() => ({
+      getFilm: vi.fn().mockResolvedValue(film3D),
+      getFilmakt: vi.fn(),
+    }))
+    const wrapper = mount(ArrPage)
+    await flushPromises()
+    const arrDate = wrapper.find('.arr-date')
+    expect(arrDate.classes()).toContain('arr-20164330')
+    expect(arrDate.classes()).toContain('akt-20164330')
+    expect(arrDate.classes()).toContain('is-3d')
+    const img3d = arrDate.find('.icon-3d')
+    expect(img3d.exists()).toBe(true)
+    expect(img3d.attributes('src')).toBe('/img/3d.svg')
+  })
 })

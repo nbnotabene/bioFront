@@ -51,4 +51,26 @@ describe('FilmCard', () => {
     const link = wrapper.find('a')
     expect(link.attributes('href')).toBe('/arr/42')
   })
+
+  it('includes akt_nr CSS class on start-date element', () => {
+    const wrapper = mount(FilmCard, { props: { group } })
+    const startDates = wrapper.findAll('.start-date')
+    expect(startDates[0].classes()).toContain('arr-42')
+    expect(startDates[0].classes()).toContain('akt-42')
+    expect(startDates[1].classes()).toContain('arr-43')
+    expect(startDates[1].classes()).toContain('akt-43')
+  })
+
+  it('renders 3D icon when showtime extra contains 3D', () => {
+    const groupWith3D: FilmGroup = {
+      ...group,
+      showtimes: [
+        { arr_nr: 100, start: '2026-01-15T18:00:00+01:00', extra: '3D' } as Filmakt
+      ]
+    }
+    const wrapper = mount(FilmCard, { props: { group: groupWith3D } })
+    const icon3d = wrapper.find('.icon-3d')
+    expect(icon3d.exists()).toBe(true)
+    expect(icon3d.attributes('src')).toBe('/img/3d.svg')
+  })
 })

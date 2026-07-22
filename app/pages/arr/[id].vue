@@ -11,7 +11,12 @@
         <h1>{{ data.title }}</h1>
 
         <div class="arr-dates">
-          <div v-for="showtime in showtimes" :key="showtime.arr_nr" class="arr-date">
+          <div
+            v-for="showtime in showtimes"
+            :key="showtime.arr_nr"
+            :class="['arr-date', `arr-${showtime.arr_nr}`, `akt-${showtime.arr_nr}`, { 'is-3d': is3D(showtime) }]"
+          >
+            <img v-if="is3D(showtime)" src="/img/3d.svg" alt="3D" class="icon-3d" />
             {{ formatStart(showtime.start) }}
           </div>
         </div>
@@ -119,6 +124,10 @@ watch(() => route.params.id, (newId) => {
   id.value = newId as string
   fetchData(id.value)
 }, { immediate: true })
+
+function is3D (showtime: Filmakt) {
+  return Boolean(showtime.extra && showtime.extra.toUpperCase().includes('3D'))
+}
 
 function formatStart (start: string) {
   const d = new Date(start)

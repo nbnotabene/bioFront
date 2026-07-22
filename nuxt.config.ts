@@ -18,7 +18,13 @@ export default defineNuxtConfig({
 			]
 		}
 	},
+	sourcemap: {
+    // Debugging server-side errors in Node logs
+    server: true, 
 
+    // Set to false to hide source code and eliminate Vite sourcemap warnings
+    client: false 
+  },
 	modules: [
 		'@nuxtjs/tailwindcss',
 		'@primevue/nuxt-module'
@@ -47,6 +53,18 @@ export default defineNuxtConfig({
 				'@vue/devtools-core',
 				'@vue/devtools-kit',
 			]
+		},
+		build: {
+			sourcemap: false,
+			rollupOptions: {
+				onwarn (warning, warn) {
+					// Known upstream quirk: nuxt:module-preload-polyfill doesn't emit a
+					// sourcemap for its injected import, which warns even though client
+					// sourcemaps are disabled above (sourcemap.client: false).
+					if (warning.plugin === 'nuxt:module-preload-polyfill') return
+					warn(warning)
+				}
+			}
 		}
 	},
 	// This enforces Static Site Generation (SSG) mode
@@ -62,7 +80,7 @@ export default defineNuxtConfig({
 		async 'nitro:config' (nitroConfig) {
 			const apiBase = nitroConfig.runtimeConfig?.public?.nbapi?.apiBase
 				|| process.env.NUXT_PUBLIC_NBAPI_API_BASE
-				|| 'https://nbapi.nbinfo.eu'
+				|| 'https://nbapi.nbinfo.eu'			  
 
 			nitroConfig.prerender ||= {}
 			nitroConfig.prerender.routes ||= []

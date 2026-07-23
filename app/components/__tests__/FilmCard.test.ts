@@ -56,15 +56,15 @@ describe('FilmCard', () => {
   it('includes arr_nr CSS class on start-date element', () => {
     const wrapper = mount(FilmCard, { props: { group } })
     const startDates = wrapper.findAll('.start-date')
-    expect(startDates[0].classes()).toContain('arr-42')
-    expect(startDates[1].classes()).toContain('arr-43')
+    expect(startDates[0]!.classes()).toContain('arr-42')
+    expect(startDates[1]!.classes()).toContain('arr-43')
   })
 
   it('links each start-date to its own arrangement page', () => {
     const wrapper = mount(FilmCard, { props: { group } })
     const startDates = wrapper.findAll('.start-date')
-    expect(startDates[0].attributes('href')).toBe('/arr/42')
-    expect(startDates[1].attributes('href')).toBe('/arr/43')
+    expect(startDates[0]!.attributes('href')).toBe('/arr/42')
+    expect(startDates[1]!.attributes('href')).toBe('/arr/43')
   })
 
   it('renders 3D icon when showtime extra contains 3D', () => {

@@ -6,18 +6,9 @@ div.container {
 	display: flex;
 	flex-direction: column;
 	min-height: 100vh;
-	width: 100%;
+	width: 100% !important;
+	max-width: none !important;
 	background-color: #000;
-	margin: 0 auto;
-}
-
-/* On very wide screens, cap the content width and center it */
-@media (min-width: 1600px) {
-	div.container {
-		max-width: 1600px;
-		margin: 0 auto;
-		box-shadow: 0 0 24px rgba(0, 0, 0, 0.25);
-	}
 }
 
 #content {

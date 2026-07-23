@@ -9,6 +9,7 @@ const group = {
   ainfo_nr: '7106906',
   title: 'The Test Film',
   poster_url: 'https://example.com/poster.jpg',
+  start: '2026-01-15T18:00:00+01:00',
   showtimes: [
     { arr_nr: 42, start: '2026-01-15T18:00:00+01:00' } as Filmakt,
     { arr_nr: 43, start: '2026-01-16T20:00:00+01:00' } as Filmakt,
@@ -52,13 +53,18 @@ describe('FilmCard', () => {
     expect(link.attributes('href')).toBe('/arr/42')
   })
 
-  it('includes akt_nr CSS class on start-date element', () => {
+  it('includes arr_nr CSS class on start-date element', () => {
     const wrapper = mount(FilmCard, { props: { group } })
     const startDates = wrapper.findAll('.start-date')
     expect(startDates[0].classes()).toContain('arr-42')
-    expect(startDates[0].classes()).toContain('akt-42')
     expect(startDates[1].classes()).toContain('arr-43')
-    expect(startDates[1].classes()).toContain('akt-43')
+  })
+
+  it('links each start-date to its own arrangement page', () => {
+    const wrapper = mount(FilmCard, { props: { group } })
+    const startDates = wrapper.findAll('.start-date')
+    expect(startDates[0].attributes('href')).toBe('/arr/42')
+    expect(startDates[1].attributes('href')).toBe('/arr/43')
   })
 
   it('renders 3D icon when showtime extra contains 3D', () => {
@@ -69,8 +75,19 @@ describe('FilmCard', () => {
       ]
     }
     const wrapper = mount(FilmCard, { props: { group: groupWith3D } })
-    const icon3d = wrapper.find('.icon-3d')
-    expect(icon3d.exists()).toBe(true)
-    expect(icon3d.attributes('src')).toBe('/img/3d.svg')
+    const icon = wrapper.find('.icon-extra')
+    expect(icon.exists()).toBe(true)
+    expect(icon.attributes('src')).toBe('/img/3d.svg')
+  })
+
+  it('renders both icons when extra lists multiple tags', () => {
+    const groupWithBoth: FilmGroup = {
+      ...group,
+      showtimes: [
+        { arr_nr: 100, start: '2026-01-15T18:00:00+01:00', extra: 'star, 3D' } as Filmakt
+      ]
+    }
+    const wrapper = mount(FilmCard, { props: { group: groupWithBoth } })
+    expect(wrapper.findAll('.icon-extra')).toHaveLength(2)
   })
 })

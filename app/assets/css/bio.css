@@ -313,9 +313,16 @@ div#biologo img {
 .start-date {
 	font: 1em Lato, arial, sans-serif;
 	color: #f08c00;
+	text-decoration: none;
+	display: block;
 }
 
-.icon-3d {
+.start-date:hover,
+.start-date:focus {
+	text-decoration: underline;
+}
+
+.icon-extra {
 	height: 1.1em;
 	width: auto;
 	vertical-align: -0.15em;
@@ -328,7 +335,7 @@ div#biologo img {
 	border-top: 1px solid #ffe066;
 	padding: 10px;
 	text-align: center;
-	height: 5em;
+	min-height: 5em;
 }
 
 /* ── Arrangement detail page ── */
@@ -389,6 +396,18 @@ div#biologo img {
 	font-size: 0.85rem;
 	margin-bottom: 4px;
 	white-space: nowrap;
+	text-decoration: none;
+	transition: color 0.2s, background-color 0.2s;
+}
+
+a.arr-date:hover,
+a.arr-date:focus {
+	background: #ffe066;
+}
+
+.arr-date.is-active {
+	background: var(--p-tag-warn-background, #ffe8cc);
+	color: var(--p-tag-warn-color, #f08c00);
 }
 
 .arr-clearfix {

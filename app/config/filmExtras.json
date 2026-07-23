@@ -1,0 +1,12 @@
+[
+	{
+		"variabel": "3D",
+		"ikon": "/img/3d.svg",
+		"description": "Film vises i 3D"
+	},
+	{
+		"variabel": "star",
+		"ikon": "/img/icons/star.svg",
+		"description": "Anbefalet film"
+	}
+]

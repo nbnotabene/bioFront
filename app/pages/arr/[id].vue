@@ -11,14 +11,23 @@
         <h1>{{ data.title }}</h1>
 
         <div class="arr-dates">
-          <div
-            v-for="showtime in showtimes"
-            :key="showtime.arr_nr"
-            :class="['arr-date', `arr-${showtime.arr_nr}`, `akt-${showtime.arr_nr}`, { 'is-3d': is3D(showtime) }]"
-          >
-            <img v-if="is3D(showtime)" src="/img/3d.svg" alt="3D" class="icon-3d" />
-            {{ formatStart(showtime.start) }}
-          </div>
+          <template v-for="showtime in showtimes" :key="showtime.arr_nr">
+            <span
+              v-if="showtime.arr_nr === data.arr_nr"
+              :class="['arr-date', `arr-${showtime.arr_nr}`, { 'is-active': true }]"
+            >
+              <FilmExtraIcons :extra="showtime.extra" />
+              {{ formatStart(showtime.start) }}
+            </span>
+            <NuxtLink
+              v-else
+              :to="`/arr/${showtime.arr_nr}`"
+              :class="['arr-date', `arr-${showtime.arr_nr}`]"
+            >
+              <FilmExtraIcons :extra="showtime.extra" />
+              {{ formatStart(showtime.start) }}
+            </NuxtLink>
+          </template>
         </div>
 
         <div class="arr-tags">
@@ -76,6 +85,7 @@
 import Tag from 'primevue/tag'
 import Divider from 'primevue/divider'
 import ProgressSpinner from 'primevue/progressspinner'
+import FilmExtraIcons from '~/components/FilmExtraIcons.vue'
 import type { Filmakt } from '~/composables/useNbapi'
 
 const route = useRoute()
@@ -124,10 +134,6 @@ watch(() => route.params.id, (newId) => {
   id.value = newId as string
   fetchData(id.value)
 }, { immediate: true })
-
-function is3D (showtime: Filmakt) {
-  return Boolean(showtime.extra && showtime.extra.toUpperCase().includes('3D'))
-}
 
 function formatStart (start: string) {
   const d = new Date(start)

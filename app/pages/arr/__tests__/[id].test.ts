@@ -92,7 +92,7 @@ describe('arr/[id] page', () => {
     expect(iframe.attributes('src')).toContain('vimeo.com')
   })
 
-  it('includes akt_nr class and 3D icon on arr-date when extra contains 3D', async () => {
+  it('includes arr_nr class and 3D icon on arr-date when extra contains 3D', async () => {
     const film3D = { ...mockFilm, arr_nr: 20164330, extra: '3D' }
     ;(globalThis as any).useNbapi = vi.fn(() => ({
       getFilm: vi.fn().mockResolvedValue(film3D),
@@ -102,10 +102,28 @@ describe('arr/[id] page', () => {
     await flushPromises()
     const arrDate = wrapper.find('.arr-date')
     expect(arrDate.classes()).toContain('arr-20164330')
-    expect(arrDate.classes()).toContain('akt-20164330')
-    expect(arrDate.classes()).toContain('is-3d')
-    const img3d = arrDate.find('.icon-3d')
-    expect(img3d.exists()).toBe(true)
-    expect(img3d.attributes('src')).toBe('/img/3d.svg')
+    const icon = arrDate.find('.icon-extra')
+    expect(icon.exists()).toBe(true)
+    expect(icon.attributes('src')).toBe('/img/3d.svg')
+  })
+
+  it('marks the currently loaded showtime as active among its siblings', async () => {
+    const grouped = { ...mockFilm, arr_nr: 5, ainfo_nr: 'A1' }
+    const allFilmakt = [
+      { ...grouped, arr_nr: 5, start: '2026-01-05T18:00:00+01:00' },
+      { ...grouped, arr_nr: 6, start: '2026-01-06T18:00:00+01:00' },
+    ]
+    ;(globalThis as any).useRoute = vi.fn(() => ({ params: { id: '5' } }))
+    ;(globalThis as any).useNbapi = vi.fn(() => ({
+      getFilm: vi.fn().mockResolvedValue(grouped),
+      getFilmakt: vi.fn().mockResolvedValue(allFilmakt),
+    }))
+    const wrapper = mount(ArrPage)
+    await flushPromises()
+    const arrDates = wrapper.findAll('.arr-date')
+    expect(arrDates[0].classes()).toContain('is-active')
+    expect(arrDates[1].classes()).not.toContain('is-active')
+    expect(arrDates[0].element.tagName).toBe('SPAN')
+    expect(arrDates[1].attributes('href')).toBe('/arr/6')
   })
 })

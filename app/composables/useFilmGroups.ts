@@ -6,6 +6,8 @@ export interface FilmGroup {
   ainfo_nr: string | null
   title: string | null
   poster_url: string | null
+  /** Start time of the earliest showtime — used to sort groups */
+  start: string
   /** All showtimes for this film, sorted earliest first */
   showtimes: Filmakt[]
 }
@@ -32,12 +34,14 @@ export function groupFilmakt (films: Filmakt[]): FilmGroup[] {
   return Array.from(groups.values()).map((showtimes) => {
     const sorted = [...showtimes].sort((a, b) => a.start.localeCompare(b.start))
     const first = sorted[0]
+    if (!first) throw new Error('groupFilmakt: encountered an empty showtime group')
     return {
       arr_nr: first.arr_nr,
       ainfo_nr: first.ainfo_nr,
       title: first.title,
       poster_url: first.poster_url,
+      start: first.start,
       showtimes: sorted
     }
-  }).sort((a, b) => a.showtimes[0].start.localeCompare(b.showtimes[0].start))
+  }).sort((a, b) => a.start.localeCompare(b.start))
 }

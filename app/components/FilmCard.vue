@@ -1,7 +1,7 @@
 <template>
-  <NuxtLink :to="`/arr/${group.arr_nr}`" class="film-card-link">
-    <Card class="film-card">
-      <template #header>
+  <Card class="film-card">
+    <template #header>
+      <NuxtLink :to="`/arr/${group.arr_nr}`" class="film-card-link">
         <div class="film-card-header">
           <h3>{{ group.title }}</h3>
           <img
@@ -10,35 +10,32 @@
             class="film-poster"
           />
         </div>
-      </template>
-      <template #content>
-        <div class="film-card-content">
-          <div class="start-dates">
-            <div
-              v-for="showtime in group.showtimes"
-              :key="showtime.arr_nr"
-              :class="['start-date', `arr-${showtime.arr_nr}`, `akt-${showtime.arr_nr}`, { 'is-3d': is3D(showtime) }]"
-            >
-              <img v-if="is3D(showtime)" src="/img/3d.svg" alt="3D" class="icon-3d" />
-              {{ formatStart(showtime.start) }}
-            </div>
-          </div>
+      </NuxtLink>
+    </template>
+    <template #content>
+      <div class="film-card-content">
+        <div class="start-dates">
+          <NuxtLink
+            v-for="showtime in group.showtimes"
+            :key="showtime.arr_nr"
+            :to="`/arr/${showtime.arr_nr}`"
+            :class="['start-date', `arr-${showtime.arr_nr}`]"
+          >
+            <FilmExtraIcons :extra="showtime.extra" />
+            {{ formatStart(showtime.start) }}
+          </NuxtLink>
         </div>
-      </template>
-    </Card>
-  </NuxtLink>
+      </div>
+    </template>
+  </Card>
 </template>
 
 <script setup lang="ts">
 import type { FilmGroup } from '~/composables/useFilmGroups'
-import type { Filmakt } from '~/composables/useNbapi'
 import Card from 'primevue/card'
+import FilmExtraIcons from '~/components/FilmExtraIcons.vue'
 
 defineProps<{ group: FilmGroup }>()
-
-function is3D (showtime: Filmakt) {
-  return Boolean(showtime.extra && showtime.extra.toUpperCase().includes('3D'))
-}
 
 function formatStart (start: string) {
   const d = new Date(start)

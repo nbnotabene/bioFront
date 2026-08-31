@@ -47,7 +47,7 @@ describe('groupFilmakt', () => {
     expect(group.arr_nr).toBe(2)
   })
 
-  it('treats rows with ainfo_nr === null as standalone, one group each', () => {
+  it('treats rows with ainfo_nr === null and different titles as standalone, one group each', () => {
     const films = [
       film({ arr_nr: 1, ainfo_nr: null, title: 'Standalone One' }),
       film({ arr_nr: 2, ainfo_nr: null, title: 'Standalone Two' }),
@@ -55,6 +55,35 @@ describe('groupFilmakt', () => {
     const groups = groupFilmakt(films)
     expect(groups).toHaveLength(2)
     expect(groups.every(g => g.showtimes.length === 1)).toBe(true)
+  })
+
+  it('falls back to grouping by normalized title when ainfo_nr is null (missing from Kultunaut source)', () => {
+    const films = [
+      film({ arr_nr: 1, ainfo_nr: null, title: 'Dobbeltspil', start: '2026-09-10T19:45:00+01:00' }),
+      film({ arr_nr: 2, ainfo_nr: null, title: ' dobbeltspil ', start: '2026-09-12T19:45:00+01:00' }),
+      film({ arr_nr: 3, ainfo_nr: null, title: 'DOBBELTSPIL', start: '2026-09-13T16:00:00+01:00' }),
+    ]
+    const groups = groupFilmakt(films)
+    expect(groups).toHaveLength(1)
+    expect(groups[0].showtimes).toHaveLength(3)
+  })
+
+  it('never mixes a title-fallback group with rows that have an ainfo_nr', () => {
+    const films = [
+      film({ arr_nr: 1, ainfo_nr: null, title: 'Same Title' }),
+      film({ arr_nr: 2, ainfo_nr: 'A1', title: 'Same Title' }),
+    ]
+    const groups = groupFilmakt(films)
+    expect(groups).toHaveLength(2)
+  })
+
+  it('keeps untitled null-ainfo_nr rows standalone instead of merging them', () => {
+    const films = [
+      film({ arr_nr: 1, ainfo_nr: null, title: null }),
+      film({ arr_nr: 2, ainfo_nr: null, title: null }),
+    ]
+    const groups = groupFilmakt(films)
+    expect(groups).toHaveLength(2)
   })
 
   it('orders groups by their earliest showtime', () => {

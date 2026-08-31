@@ -33,7 +33,7 @@ describe('arr/[id] page', () => {
   it('renders film data after fetch', async () => {
     ;(globalThis as any).useNbapi = vi.fn(() => ({
       getFilm: vi.fn().mockResolvedValue(mockFilm),
-      getFilmakt: vi.fn(),
+      getFilmakt: vi.fn().mockResolvedValue([mockFilm]),
     }))
     const wrapper = mount(ArrPage)
     await flushPromises()
@@ -42,16 +42,33 @@ describe('arr/[id] page', () => {
     expect(wrapper.text()).toContain('A great movie')
   })
 
-  it('shows a single date when ainfo_nr is null (standalone event, no /filmakt refetch)', async () => {
+  it('shows a single date when ainfo_nr and title are both empty (standalone event, no /filmakt refetch)', async () => {
     const getFilmakt = vi.fn()
     ;(globalThis as any).useNbapi = vi.fn(() => ({
-      getFilm: vi.fn().mockResolvedValue(mockFilm),
+      getFilm: vi.fn().mockResolvedValue({ ...mockFilm, title: null }),
       getFilmakt,
     }))
     const wrapper = mount(ArrPage)
     await flushPromises()
     expect(wrapper.findAll('.arr-date')).toHaveLength(1)
     expect(getFilmakt).not.toHaveBeenCalled()
+  })
+
+  it('shows every showtime sharing a normalized title when ainfo_nr is null (Kultunaut omitted it)', async () => {
+    const allFilmakt = [
+      { ...mockFilm, arr_nr: 20259236, title: 'Dobbeltspil', start: '2026-09-10T19:45:00+01:00' },
+      { ...mockFilm, arr_nr: 20259237, title: 'Dobbeltspil', start: '2026-09-12T19:45:00+01:00' },
+      { ...mockFilm, arr_nr: 20259238, title: 'Dobbeltspil', start: '2026-09-13T16:00:00+01:00' },
+      { ...mockFilm, arr_nr: 1, title: 'Some Other Film', start: '2026-09-11T19:45:00+01:00' },
+    ]
+    ;(globalThis as any).useRoute = vi.fn(() => ({ params: { id: '20259236' } }))
+    ;(globalThis as any).useNbapi = vi.fn(() => ({
+      getFilm: vi.fn().mockResolvedValue(allFilmakt[0]),
+      getFilmakt: vi.fn().mockResolvedValue(allFilmakt),
+    }))
+    const wrapper = mount(ArrPage)
+    await flushPromises()
+    expect(wrapper.findAll('.arr-date')).toHaveLength(3)
   })
 
   it('shows every showtime sharing ainfo_nr when the film has multiple screenings', async () => {
@@ -83,7 +100,7 @@ describe('arr/[id] page', () => {
   it('renders VideoEmbed when tmdb videoid is present', async () => {
     ;(globalThis as any).useNbapi = vi.fn(() => ({
       getFilm: vi.fn().mockResolvedValue({ ...mockFilm, tmdb: JSON.stringify({ videoid: '12345678' }) }),
-      getFilmakt: vi.fn(),
+      getFilmakt: vi.fn().mockResolvedValue([mockFilm]),
     }))
     const wrapper = mount(ArrPage)
     await flushPromises()
@@ -96,7 +113,7 @@ describe('arr/[id] page', () => {
     const film3D = { ...mockFilm, arr_nr: 20164330, extra: '3D' }
     ;(globalThis as any).useNbapi = vi.fn(() => ({
       getFilm: vi.fn().mockResolvedValue(film3D),
-      getFilmakt: vi.fn(),
+      getFilmakt: vi.fn().mockResolvedValue([film3D]),
     }))
     const wrapper = mount(ArrPage)
     await flushPromises()

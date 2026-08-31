@@ -87,13 +87,14 @@ import Divider from 'primevue/divider'
 import ProgressSpinner from 'primevue/progressspinner'
 import FilmExtraIcons from '~/components/FilmExtraIcons.vue'
 import type { Filmakt } from '~/composables/useNbapi'
+import { sameFilm } from '~/composables/useFilmGroups'
 
 const route = useRoute()
 const { getFilm, getFilmakt } = useNbapi()
 
 const id = ref(route.params.id as string)
 const data = ref<Filmakt | null>(null)
-/** All showtimes for this film: every /filmakt row sharing ainfo_nr, or just this row when ainfo_nr is null. */
+/** All showtimes for this film: every /filmakt row sharing ainfo_nr, or (when ainfo_nr is null) sharing its normalized title. */
 const showtimes = ref<Filmakt[]>([])
 const loading = ref(true)
 
@@ -115,10 +116,10 @@ async function fetchData (arrId: string) {
     const film = await getFilm(arrId)
     data.value = film
 
-    if (film.ainfo_nr) {
+    if (film.ainfo_nr || film.title?.trim()) {
       const all = await getFilmakt()
       showtimes.value = all
-        .filter(f => f.ainfo_nr === film.ainfo_nr)
+        .filter(f => sameFilm(f, film))
         .sort((a, b) => a.start.localeCompare(b.start))
     } else {
       showtimes.value = [film]

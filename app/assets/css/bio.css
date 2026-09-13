@@ -516,6 +516,12 @@ a.arr-credit:hover .arr-credit-name {
 	text-overflow: ellipsis;
 }
 
+@media (max-width: 600px) {
+	.arr-credit:nth-child(n+5) {
+		display: none;
+	}
+}
+
 .arr-footer {
 	margin-top: 3em;
 }

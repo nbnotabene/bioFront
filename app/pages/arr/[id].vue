@@ -176,7 +176,7 @@ const director = computed(() => tmdbData.value?.crew?.find(c => c.job === 'Direc
 const cast = computed(() => {
   const casted = tmdbData.value?.casted
   if (!casted) return []
-  return [...casted].sort((a, b) => (a.order ?? 999) - (b.order ?? 999)).slice(0, 4)
+  return [...casted].sort((a, b) => (a.order ?? 999) - (b.order ?? 999)).slice(0, 7)
 })
 
 async function fetchData (arrId: string) {

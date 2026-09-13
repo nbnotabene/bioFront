@@ -96,18 +96,18 @@
 
           <div class="arr-links">
             <span class="arr-links-label">Relevante links:</span>
-            <a class="arr-link-tag" target="_blank" :href="`https://www.google.com/search?q=${encodeURIComponent((data.title || '') + ' film')}`">
-              <Tag value="Google" severity="warn" />
-            </a>
             <a v-if="tmdbData?.id" class="arr-link-tag" target="_blank" :href="`https://www.themoviedb.org/movie/${tmdbData.id}`">
               <Tag value="TheMovieDB" severity="warn" />
+            </a>
+            <a class="arr-link-tag" target="_blank" :href="`https://www.google.com/search?q=${encodeURIComponent((data.title || '') + ' film')}`">
+              <Tag value="Google" severity="warn" />
             </a>
           </div>
 
           <div class="arr-share">
             <span class="arr-links-label">Del med andre:</span>
             <a class="arr-link-tag" href="#" @click.prevent="share('facebook')"><Tag value="Facebook" severity="warn" /></a>
-            <a class="arr-link-tag" href="#" @click.prevent="share('twitter')"><Tag value="Twitter" severity="warn" /></a>
+            <a class="arr-link-tag" href="#" @click.prevent="share('mastodon')"><Tag value="Mastodon" severity="warn" /></a>
             <a class="arr-link-tag" target="_blank" :href="`https://www.kultunaut.dk/perl/share/type-nynaut/googlecal?ArrNr=${data.arr_nr}`"><Tag value="Google Calendar" severity="warn" /></a>
             <a class="arr-link-tag" :href="`https://www.kultunaut.dk/perl/share/type-nynaut/ical?ArrNr=${data.arr_nr}`"><Tag value="iCal" severity="warn" /></a>
             <a class="arr-link-tag" target="_blank" :href="`https://www.kultunaut.dk/perl/share/type-nynaut/mail?ArrNr=${data.arr_nr}`"><Tag value="Email" severity="warn" /></a>
@@ -219,12 +219,27 @@ function formatStart (start: string) {
   })
 }
 
-function share (platform: 'facebook' | 'twitter') {
-  const arrNr = data.value?.arr_nr
-  const urls: Record<string, string> = {
-    facebook: `https://www.kultunaut.dk/perl/share/type-nynaut/facebook?ArrNr=${arrNr}`,
-    twitter: `https://www.kultunaut.dk/perl/share/type-nynaut/twitter?ArrNr=${arrNr}`
+function share (platform: 'facebook' | 'mastodon') {
+  const pageUrl = window.location.href
+
+  if (platform === 'facebook') {
+    // Kultunaut's facebook share proxy no longer works with Facebook's current
+    // sharer, so we link straight to Facebook's own sharer with this page's URL.
+    const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(pageUrl)}`
+    window.open(url, '_blank', 'scrollbars=yes,resizable=0,width=560,height=600,alwaysRaised=yes')
+    return
   }
-  window.open(urls[platform], '_blank', 'scrollbars=yes,resizable=0,width=560,height=600,alwaysRaised=yes')
+
+  // Mastodon has no single fixed domain, so ask which instance to post from.
+  const lastInstance = localStorage.getItem('mastodonInstance') || 'mastodon.social'
+  const input = window.prompt('Hvilken Mastodon-instans bruger du? (fx mastodon.social)', lastInstance)
+  if (!input) return
+  const instance = input.trim().replace(/^https?:\/\//, '').replace(/\/+$/, '')
+  if (!instance) return
+  localStorage.setItem('mastodonInstance', instance)
+
+  const text = `${data.value?.title || ''} ${pageUrl}`.trim()
+  const url = `https://${instance}/share?text=${encodeURIComponent(text)}`
+  window.open(url, '_blank', 'scrollbars=yes,resizable=1,width=560,height=600,alwaysRaised=yes')
 }
 </script>

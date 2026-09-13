@@ -463,6 +463,59 @@ a.arr-date:focus {
 	height: 100%;
 }
 
+.arr-credits {
+	display: flex;
+	gap: 1rem;
+	flex-wrap: wrap;
+	margin-top: 0.5rem;
+}
+
+.arr-credit {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	width: 11rem;
+	color: inherit;
+	text-decoration: none;
+}
+
+a.arr-credit:hover .arr-credit-name {
+	text-decoration: underline;
+}
+
+.arr-credit-photo {
+	width: 3rem;
+	height: 3rem;
+	border-radius: 50%;
+	object-fit: cover;
+	flex-shrink: 0;
+}
+
+.arr-credit-photo-placeholder {
+	background: #444;
+}
+
+.arr-credit-info {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+}
+
+.arr-credit-name {
+	font-weight: 600;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.arr-credit-role {
+	font-size: 0.85rem;
+	opacity: 0.8;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
 .arr-footer {
 	margin-top: 8em;
 }

@@ -47,13 +47,60 @@
           <VideoEmbed :video-id="videoId" />
         </template>
 
+        <template v-if="director || cast.length">
+          <Divider />
+          <div class="arr-credits">
+            <component
+              :is="director.id ? 'a' : 'div'"
+              v-if="director"
+              class="arr-credit arr-credit-director"
+              v-bind="director.id ? { href: `https://www.themoviedb.org/person/${director.id}`, target: '_blank', rel: 'noopener' } : {}"
+            >
+              <img
+                v-if="director.profile_path"
+                class="arr-credit-photo"
+                :src="`https://image.tmdb.org/t/p/w185${director.profile_path}`"
+                :alt="director.name"
+              />
+              <div v-else class="arr-credit-photo arr-credit-photo-placeholder" />
+              <div class="arr-credit-info">
+                <span class="arr-credit-name">{{ director.name }}</span>
+                <span class="arr-credit-role">Instruktør</span>
+              </div>
+            </component>
+
+            <component
+              :is="actor.id ? 'a' : 'div'"
+              v-for="actor in cast"
+              :key="actor.id ?? actor.name"
+              class="arr-credit"
+              v-bind="actor.id ? { href: `https://www.themoviedb.org/person/${actor.id}`, target: '_blank', rel: 'noopener' } : {}"
+            >
+              <img
+                v-if="actor.profile_path"
+                class="arr-credit-photo"
+                :src="`https://image.tmdb.org/t/p/w185${actor.profile_path}`"
+                :alt="actor.name"
+              />
+              <div v-else class="arr-credit-photo arr-credit-photo-placeholder" />
+              <div class="arr-credit-info">
+                <span class="arr-credit-name">{{ actor.name }}</span>
+                <span v-if="actor.character" class="arr-credit-role">{{ actor.character }}</span>
+              </div>
+            </component>
+          </div>
+        </template>
+
         <div class="arr-footer">
           <Divider />
 
           <div class="arr-links">
             <span class="arr-links-label">Relevante links:</span>
             <a class="arr-link-tag" target="_blank" :href="`https://www.google.com/search?q=${encodeURIComponent((data.title || '') + ' film')}`">
-              <Tag value="Om filmen" severity="warn" />
+              <Tag value="Google" severity="warn" />
+            </a>
+            <a v-if="tmdbData?.id" class="arr-link-tag" target="_blank" :href="`https://www.themoviedb.org/movie/${tmdbData.id}`">
+              <Tag value="TheMovieDB" severity="warn" />
             </a>
           </div>
 
@@ -98,14 +145,38 @@ const data = ref<Filmakt | null>(null)
 const showtimes = ref<Filmakt[]>([])
 const loading = ref(true)
 
-const videoId = computed(() => {
+interface TmdbCastMember {
+  id?: number
+  name: string
+  character?: string
+  profile_path?: string | null
+  order?: number
+}
+
+interface TmdbCrewMember {
+  id?: number
+  name: string
+  job: string
+  profile_path?: string | null
+}
+
+const tmdbData = computed<{ id?: number, videoid?: string, casted?: TmdbCastMember[], crew?: TmdbCrewMember[] } | null>(() => {
   if (!data.value?.tmdb) return null
   try {
-    const parsed = JSON.parse(data.value.tmdb)
-    return parsed?.videoid || null
+    return JSON.parse(data.value.tmdb)
   } catch {
     return null
   }
+})
+
+const videoId = computed(() => tmdbData.value?.videoid || null)
+
+const director = computed(() => tmdbData.value?.crew?.find(c => c.job === 'Director') || null)
+
+const cast = computed(() => {
+  const casted = tmdbData.value?.casted
+  if (!casted) return []
+  return [...casted].sort((a, b) => (a.order ?? 999) - (b.order ?? 999)).slice(0, 4)
 })
 
 async function fetchData (arrId: string) {

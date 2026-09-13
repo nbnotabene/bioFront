@@ -109,6 +109,74 @@ describe('arr/[id] page', () => {
     expect(iframe.attributes('src')).toContain('vimeo.com')
   })
 
+  it('renders director and up to 4 cast members from tmdb credits', async () => {
+    const tmdb = JSON.stringify({
+      crew: [{ id: 50, name: 'Jane Director', job: 'Director' }, { id: 51, name: 'Some Writer', job: 'Writer' }],
+      casted: [
+        { id: 1, name: 'Actor One', character: 'Hero', order: 0, profile_path: '/one.jpg' },
+        { id: 2, name: 'Actor Two', character: 'Villain', order: 1, profile_path: null },
+        { name: 'Actor Three', character: 'Sidekick', order: 2 },
+        { id: 4, name: 'Actor Four', character: 'Friend', order: 3 },
+        { id: 5, name: 'Actor Five', character: 'Extra', order: 4 },
+      ],
+    })
+    ;(globalThis as any).useNbapi = vi.fn(() => ({
+      getFilm: vi.fn().mockResolvedValue({ ...mockFilm, tmdb }),
+      getFilmakt: vi.fn().mockResolvedValue([mockFilm]),
+    }))
+    const wrapper = mount(ArrPage)
+    await flushPromises()
+    expect(wrapper.text()).toContain('Jane Director')
+    expect(wrapper.text()).toContain('Instruktør')
+    expect(wrapper.text()).not.toContain('Some Writer')
+    expect(wrapper.text()).toContain('Actor One')
+    expect(wrapper.text()).toContain('Hero')
+    expect(wrapper.text()).toContain('Actor Four')
+    expect(wrapper.text()).not.toContain('Actor Five')
+    const photos = wrapper.findAll('img.arr-credit-photo')
+    expect(photos[0]!.attributes('src')).toBe('https://image.tmdb.org/t/p/w185/one.jpg')
+
+    const links = wrapper.findAll('a.arr-credit')
+    const directorLink = links.find(l => l.text().includes('Jane Director'))
+    expect(directorLink?.attributes('href')).toBe('https://www.themoviedb.org/person/50')
+    expect(directorLink?.attributes('target')).toBe('_blank')
+    expect(directorLink?.attributes('rel')).toBe('noopener')
+
+    const actorOneLink = links.find(l => l.text().includes('Actor One'))
+    expect(actorOneLink?.attributes('href')).toBe('https://www.themoviedb.org/person/1')
+
+    // Actor Three has no id, so it should render as a plain div, not a link
+    const divs = wrapper.findAll('div.arr-credit')
+    expect(divs.some(d => d.text().includes('Actor Three'))).toBe(true)
+    expect(links.some(l => l.text().includes('Actor Three'))).toBe(false)
+  })
+
+  it('shows Google and TheMovieDB links in order, TheMovieDB only when tmdb id is known', async () => {
+    ;(globalThis as any).useNbapi = vi.fn(() => ({
+      getFilm: vi.fn().mockResolvedValue({ ...mockFilm, tmdb: JSON.stringify({ id: 777 }) }),
+      getFilmakt: vi.fn().mockResolvedValue([mockFilm]),
+    }))
+    const wrapper = mount(ArrPage)
+    await flushPromises()
+    const linkTags = wrapper.findAll('.arr-links .arr-link-tag')
+    expect(linkTags).toHaveLength(2)
+    expect(linkTags[0]!.text()).toBe('Google')
+    expect(linkTags[1]!.text()).toBe('TheMovieDB')
+    expect(linkTags[1]!.attributes('href')).toBe('https://www.themoviedb.org/movie/777')
+  })
+
+  it('omits TheMovieDB link when there is no tmdb data', async () => {
+    ;(globalThis as any).useNbapi = vi.fn(() => ({
+      getFilm: vi.fn().mockResolvedValue(mockFilm),
+      getFilmakt: vi.fn().mockResolvedValue([mockFilm]),
+    }))
+    const wrapper = mount(ArrPage)
+    await flushPromises()
+    const linkTags = wrapper.findAll('.arr-links .arr-link-tag')
+    expect(linkTags).toHaveLength(1)
+    expect(linkTags[0]!.text()).toBe('Google')
+  })
+
   it('includes arr_nr class and 3D icon on arr-date when extra contains 3D', async () => {
     const film3D = { ...mockFilm, arr_nr: 20164330, extra: '3D' }
     ;(globalThis as any).useNbapi = vi.fn(() => ({

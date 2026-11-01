@@ -1,5 +1,6 @@
-const CACHE_NAME = 'biofront-v1';
-const API_CACHE_NAME = 'biofront-api-v1';
+const CACHE_NAME = 'biofront-v2';
+const API_CACHE_NAME = 'biofront-api-v2';
+const NETWORK_TIMEOUT_MS = 8000;
 const IMAGE_CACHE_NAME = 'biofront-images-v1';
 
 // Static assets to pre-cache on SW install
@@ -100,9 +101,14 @@ self.addEventListener('fetch', (event) => {
 });
 
 // Strategy: Network-First
+// A hanging request (no response, no error) is treated as a failure after NETWORK_TIMEOUT_MS,
+// so we fall back to the cache instead of leaving the page waiting forever.
 async function networkFirst(request, cacheName) {
   try {
-    const networkResponse = await fetch(request);
+    const networkResponse = await Promise.race([
+      fetch(request),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Network timeout')), NETWORK_TIMEOUT_MS))
+    ]);
     if (networkResponse && networkResponse.ok) {
       const cache = await caches.open(cacheName);
       cache.put(request, networkResponse.clone());

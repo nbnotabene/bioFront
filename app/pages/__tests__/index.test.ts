@@ -37,4 +37,22 @@ describe('index page', () => {
     await flushPromises()
     expect(wrapper.find('#temporary-info').exists()).toBe(true)
   })
+
+  it('shows an error with a retry button when the fetch fails, and retries on click', async () => {
+    const getFilmakt = vi.fn()
+      .mockRejectedValueOnce(new Error('timeout'))
+      .mockResolvedValueOnce(mockEvents)
+    ;(globalThis as any).useNbapi = vi.fn(() => ({ getFilmakt }))
+
+    const wrapper = mount(IndexPage)
+    await flushPromises()
+    expect(wrapper.find('.arr-notfound').text()).toContain('Kunne ikke hente programmet')
+    expect(wrapper.find('.arr-loading').exists()).toBe(false)
+
+    await wrapper.find('.retry-button').trigger('click')
+    await flushPromises()
+    expect(getFilmakt).toHaveBeenCalledTimes(2)
+    expect(wrapper.find('.arr-notfound').exists()).toBe(false)
+    expect(wrapper.findAll('.film-card-link')).toHaveLength(2)
+  })
 })

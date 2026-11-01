@@ -31,21 +31,23 @@ export interface NbapiPage {
 export function useNbapi () {
   const { public: { nbapi } } = useRuntimeConfig()
   const apiBase = nbapi.apiBase
+  // Reject instead of hanging forever when nbapi is unreachable, so pages can show an error
+  const opts = { timeout: 10000 }
 
   function getFilmakt () {
-    return $fetch<Filmakt[]>(`${apiBase}/filmakt`)
+    return $fetch<Filmakt[]>(`${apiBase}/filmakt`, opts)
   }
 
   function getFilm (arrNr: string | number) {
-    return $fetch<Filmakt>(`${apiBase}/filmakt/${arrNr}`)
+    return $fetch<Filmakt>(`${apiBase}/filmakt/${arrNr}`, opts)
   }
 
   function getPages () {
-    return $fetch<NbapiPage[]>(`${apiBase}/pages`)
+    return $fetch<NbapiPage[]>(`${apiBase}/pages`, opts)
   }
 
   function getPage (id: string | number) {
-    return $fetch<NbapiPage>(`${apiBase}/pages/${id}`)
+    return $fetch<NbapiPage>(`${apiBase}/pages/${id}`, opts)
   }
 
   return { getFilmakt, getFilm, getPages, getPage }

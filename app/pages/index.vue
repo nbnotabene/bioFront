@@ -4,6 +4,10 @@
     <div v-if="pending" class="arr-loading">
       <ProgressSpinner />
     </div>
+    <div v-else-if="error" class="arr-notfound">
+      Kunne ikke hente programmet.
+      <button type="button" class="retry-button" @click="load">Prøv igen</button>
+    </div>
     <DataView v-else :value="filmGroups" layout="grid">
       <template #grid="{ items }">
         <ul class="film-grid">
@@ -26,17 +30,24 @@ const { getFilmakt } = useNbapi()
 
 const filmGroups = ref<FilmGroup[]>([])
 const pending = ref(true)
+const error = ref(false)
 
 const infoMessage =
   'Har du lyst til at være støtte-medlem? Eller vælge din favoritfilm til visning i biografen? ' +
   'Check <a href="/pages/medlem">dette link</a>'
 
-onMounted(async () => {
+async function load () {
+  pending.value = true
+  error.value = false
   try {
     const events: Filmakt[] = await getFilmakt()
     filmGroups.value = groupFilmakt(events)
+  } catch {
+    error.value = true
   } finally {
     pending.value = false
   }
-})
+}
+
+onMounted(load)
 </script>

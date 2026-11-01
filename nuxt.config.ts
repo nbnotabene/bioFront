@@ -14,6 +14,8 @@ export default defineNuxtConfig({
 			link: [
 				{ rel: 'icon', href: '/favicon.ico', type: 'image/x-icon' },
 				{ rel: 'manifest', href: '/manifest.webmanifest' },
+				// Film data is fetched client-side from nbapi; warm up DNS+TLS while the JS loads
+				{ rel: 'preconnect', href: 'https://nbapi.nbinfo.eu', crossorigin: '' },
 				{ rel: 'stylesheet', href: 'https://fonts.googleapis.com/icon?family=Material+Icons' }
 			]
 		}

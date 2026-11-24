@@ -15,6 +15,8 @@ Repo: `git@github.com:nbnotabene/bioFront.git` (branch `develop` i brug nu, `mai
 
 ## 1. local.svanekebio.dk (dev-site via nginx)
 
+> **Midlertidigt:** under migreringen til biofilm viser local.svanekebio.dk branch `toolsapi` — se [Preview](#preview-localsvanekebiodk-viser-branch-toolsapi-midlertidigt) nedenfor.
+
 ### Status
 Nginx-config (`/etc/nginx/sites-available/local.svanekebio.dk`, symlinket i `sites-enabled`) peger direkte på build-output. Kort version:
 
@@ -170,15 +172,16 @@ Alle sites henter data fra `https://tools.nbinfo.eu/biofilm` ved runtime. Før r
 - CORS (`CORS_ORIGINS` i `/home/nb/www/toolsapi/.env`) tillader sitets origin (svanekebio.dk, local.svanekebio.dk og biofront.statichost.page er konfigureret)
 - biofilms kultunaut-sync-cron kører (og nbapi's er slået fra), så `/filmakt` er opdateret — se `/home/nb/www/toolsapi/services/biofilm/README.md`
 
-## Preview: local.svaneke.net (branch `toolsapi`)
+## Preview: local.svanekebio.dk viser branch `toolsapi` (midlertidigt)
 
-Udviklingsbranchen `toolsapi` vises på `https://local.svaneke.net`, adskilt fra drift:
+Mens migreringen til biofilm står på, serverer `local.svanekebio.dk` branchen `toolsapi` i stedet for `develop`:
 
-- Kode i git-worktree'en `/home/nb/www/bioFront-toolsapi` (branch `toolsapi`); `/home/nb/www/bioFront` (`develop`, local.svanekebio.dk) røres ikke.
-- nginx: `/etc/nginx/sites-available/local.svaneke.net` serverer worktree'ens `.output/public`; certifikat `--cert-name local.svaneke.net` (webroot). Ikke bag Cloudflare.
-- Data: samme origin via nginx-proxy `location /biofilm/` → toolsapi's Traefik (`127.0.0.1:8081`, Host `tools.nbinfo.eu`), **kun GET/HEAD** (`limit_except GET`), så preview'et kan aldrig skrive til databasen og kræver ingen CORS-ændring i toolsapi.
-- Byg: `cd /home/nb/www/bioFront-toolsapi && npm test && NUXT_PUBLIC_BIOFILM_API_BASE=https://local.svaneke.net/biofilm npx nuxi generate` (prerender henter fra `https://tools.nbinfo.eu/biofilm`).
+- Kode i git-worktree'en `/home/nb/www/bioFront-toolsapi` (branch `toolsapi`); `/home/nb/www/bioFront` (`develop`) røres ikke.
+- nginx (`/etc/nginx/sites-available/local.svanekebio.dk`): 443-blokkens `root` er `/home/nb/www/bioFront-toolsapi/.output/public`. Port 80's ACME-`root` er stadig `/home/nb/www/bioFront/.output/public`, da certbot fornyer via den webroot.
+- Data: samme origin via nginx-proxy `location /biofilm/` → toolsapi's Traefik (`127.0.0.1:8081`, Host `tools.nbinfo.eu`), **kun GET/HEAD** (`limit_except GET`). Preview'et kan derfor aldrig skrive til databasen, kræver ingen CORS-ændring i toolsapi og undgår NAT-hairpin fra LAN'et (`tools.nbinfo.eu` er ikke bag Cloudflare; `local.svanekebio.dk` er).
+- Byg: `cd /home/nb/www/bioFront-toolsapi && npm test && NUXT_PUBLIC_BIOFILM_API_BASE=https://local.svanekebio.dk/biofilm npx nuxi generate` (prerender henter fra `https://tools.nbinfo.eu/biofilm`). Intet nginx-reload nødvendigt.
 - Push af `toolsapi` deployer ikke: Action'en kører kun på `main`.
+- Tilbage til `develop`: sæt 443-`root` tilbage til `/home/nb/www/bioFront/.output/public`, fjern `location /biofilm/`, `nginx -t && systemctl reload nginx` (backup i `/home/nb/nginx-backup/`).
 
 ---
 

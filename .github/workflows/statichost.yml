@@ -1,0 +1,17 @@
+# Trigger a statichost.eu build of svanekebio.dk on push to main only.
+# (A plain GitHub webhook can't filter by branch, so pushes to develop would build too.)
+name: Deploy to statichost
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  trigger-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: POST to statichost builder
+        run: curl -fsS -X POST -m60 https://builder.statichost.eu/biofront

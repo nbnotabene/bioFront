@@ -7,7 +7,7 @@ Der deployes til **2 sites**, uafhængigt af hinanden:
 | Site | Formål | Hosting | Trigger |
 |---|---|---|---|
 | `local.svanekebio.dk` | Dev/staging | Nginx på denne server | Manuel build + rsync/symlink |
-| `svanekebio.dk` | Produktion | [statichost.eu](https://builder.statichost.eu/) | Automatisk ved push til GitHub |
+| `svanekebio.dk` | Produktion | [statichost.eu](https://builder.statichost.eu/) | GitHub Action ved push til `main` + dagligt cron-build |
 
 Repo: `git@github.com:nbnotabene/bioFront.git` (branch `develop` i brug nu, `main` er prod-branch).
 
@@ -84,7 +84,7 @@ Hvis dev-deploy skal ske automatisk ved push til `develop`, kan der oprettes et 
 ## 2. svanekebio.dk (produktion via statichost.eu)
 
 ### Setup
-statichost.eu (https://builder.statichost.eu/) bygger og hoster sitet ud fra GitHub-repoet. Deploy sker ved push/merge til produktions-branchen (`main`) — statichost.eu har en GitHub-integration/webhook der trigger automatisk build ved push.
+statichost.eu (https://builder.statichost.eu/) bygger og hoster sitet ud fra GitHub-repoet. Deploy sker ved push/merge til produktions-branchen (`main`). Push til `develop` trigger **ikke** et build.
 
 **Byg-kommando statichost.eu skal bruge:** `npx nuxi generate`
 **Output-mappe:** `.output/public`
@@ -95,8 +95,22 @@ statichost.eu (https://builder.statichost.eu/) bygger og hoster sitet ud fra Git
 - `NUXT_PUBLIC_NBAPI_API_BASE` behøver ikke sættes — default i `nuxt.config.ts` peger på `https://nbapi.nbinfo.eu`.
 - Custom domains `svanekebio.dk` og `www.svanekebio.dk` er tilføjet i statichost. Statichost udsteder selv Let's Encrypt-certifikater og redirecter `www` → `https://svanekebio.dk` (301).
 
+### Build-triggere
+Et build startes med et `POST` til `https://builder.statichost.eu/biofront` (statichost bygger altid den konfigurerede branch, `main`). Det sker fra:
+
+1. **GitHub Action** `.github/workflows/statichost.yml` — kører kun ved push til `main` (kan også startes manuelt under *Actions → Deploy to statichost → Run workflow*). Der bruges bevidst **ikke** en GitHub-webhook: webhooks kan ikke filtreres på branch, så push til `develop` ville også trigge et build.
+2. **Dagligt cron-job** på serveren (crontab for `nb`), kl. 06:15 — lige efter nbapi's kultunaut-sync kl. 06:00, så nye film får prerenderede `/arr/{arr_nr}`-sider (se nedenfor):
+   ```
+   15 6 * * * echo "$(date -Is) $(/usr/bin/curl -fsS -X POST -m60 https://builder.statichost.eu/biofront 2>&1)" >> /home/nb/statichost_biofront.log
+   ```
+3. **Manuelt:** `curl -fsS -X POST https://builder.statichost.eu/biofront` eller fra statichost-dashboardet.
+
+Build-URL'en er uautentificeret (alle der kender sitenavnet kan starte et build). Auth kan slås til under *Source & build* i statichost; så skal Action og cron sende `Authorization: Bearer <API_TOKEN>`.
+
+Om et nyt build er live kan ses i `https://svanekebio.dk/_nuxt/builds/latest.json` (`timestamp` = build-tidspunkt i ms).
+
 ### Ruter der ikke fandtes ved build
-Build-tiden henter `/filmakt` og `/pages` fra nbapi og prerenderer en fil pr. `/arr/{arr_nr}` og `/pages/{slug}`. En film oprettet *efter* seneste build har ingen fil: statichost serverer `404.html` (som er Nuxt-appen), så siden vises korrekt for brugeren, men med HTTP-status **404** — relevant for søgemaskiner og link-previews (fx Facebook). Data er aldrig forældet, da alt hentes client-side; et nyt build er kun nødvendigt for at give nye film-URL'er status 200.
+Build-tiden henter `/filmakt` og `/pages` fra nbapi og prerenderer en fil pr. `/arr/{arr_nr}` og `/pages/{slug}`. En film oprettet *efter* seneste build har ingen fil: statichost serverer `404.html` (som er Nuxt-appen), så siden vises korrekt for brugeren, men med HTTP-status **404** — relevant for søgemaskiner og link-previews (fx Facebook). Data er aldrig forældet, da alt hentes client-side; det daglige cron-build sørger for at nye film-URL'er får status 200.
 
 ### Deploy-trin (release til produktion)
 
@@ -168,12 +182,12 @@ Begge sites henter data fra `https://nbapi.nbinfo.eu` ved runtime. Før release 
   push til develop          push/merge til main
       │                          │
       ▼                          ▼
-manuel: git pull            statichost.eu builder
-  + npm install              (auto-trigger via
-  + npx nuxi generate         GitHub webhook)
+manuel: git pull            GitHub Action (kun main)
+  + npm install              + cron 06:15 dagligt
+  + npx nuxi generate          → statichost.eu builder
       │                          │
       ▼                          ▼
-nginx serverer              statichost.eu CDN
+nginx serverer              statichost.eu
 .output/public direkte      serverer svanekebio.dk
       │                          │
       ▼                          ▼

@@ -82,7 +82,7 @@ Tests live in `__tests__/` next to the code they cover, run with Vitest + `@vue/
 
 Two independent deploy targets from the same static build (`.output/public`), detailed in `deploy.md`:
 - `local.svanekebio.dk` — dev/staging on this server: nginx vhost `/etc/nginx/sites-available/local.svanekebio.dk` serves `.output/public` directly (SPA fallback `/200.html`), cert `--cert-name local.svanekebio.dk` (certbot webroot). Behind Cloudflare proxy. Deploy is manual `git pull && npm install && npx nuxi generate` on the server, no reload needed.
-- `svanekebio.dk` (+ `www`, redirected to apex) — production on statichost.eu (site `biofront.statichost.page`), auto-builds on push/merge to `main` per `statichost.yml`. Cloudflare is DNS only (grey cloud) for these records; statichost handles certs. Film routes created after the last build get served as `404.html` (the app, but HTTP 404) until the next build.
+- `svanekebio.dk` (+ `www`, redirected to apex) — production on statichost.eu (site `biofront.statichost.page`), builds per `statichost.yml`, triggered by `POST https://builder.statichost.eu/biofront` from the GitHub Action `.github/workflows/statichost.yml` (push to `main` only — no repo webhook, since webhooks can't filter branches and `develop` must not deploy) and a daily 06:15 cron job on the server. Cloudflare is DNS only (grey cloud) for these records; statichost handles certs. Film routes created after the last build get served as `404.html` (the app, but HTTP 404) until the next build.
 
 Every :443 vhost on this server must `include /etc/letsencrypt/options-ssl-nginx.conf` — mismatched `ssl_prefer_server_ciphers` between vhosts breaks Cloudflare's TLS HelloRetryRequest and yields 525 (see `deploy.md`).
 

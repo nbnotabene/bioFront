@@ -109,7 +109,7 @@ describe('arr/[id] page', () => {
     expect(iframe.attributes('src')).toContain('vimeo.com')
   })
 
-  it('renders director and up to 4 cast members from tmdb credits', async () => {
+  it('renders director and up to 7 cast members from tmdb credits', async () => {
     const tmdb = JSON.stringify({
       crew: [{ id: 50, name: 'Jane Director', job: 'Director' }, { id: 51, name: 'Some Writer', job: 'Writer' }],
       casted: [
@@ -118,6 +118,9 @@ describe('arr/[id] page', () => {
         { name: 'Actor Three', character: 'Sidekick', order: 2 },
         { id: 4, name: 'Actor Four', character: 'Friend', order: 3 },
         { id: 5, name: 'Actor Five', character: 'Extra', order: 4 },
+        { id: 6, name: 'Actor Six', character: 'Neighbour', order: 5 },
+        { id: 7, name: 'Actor Seven', character: 'Cop', order: 6 },
+        { id: 8, name: 'Actor Eight', character: 'Passerby', order: 7 },
       ],
     })
     ;(globalThis as any).useNbapi = vi.fn(() => ({
@@ -131,8 +134,8 @@ describe('arr/[id] page', () => {
     expect(wrapper.text()).not.toContain('Some Writer')
     expect(wrapper.text()).toContain('Actor One')
     expect(wrapper.text()).toContain('Hero')
-    expect(wrapper.text()).toContain('Actor Four')
-    expect(wrapper.text()).not.toContain('Actor Five')
+    expect(wrapper.text()).toContain('Actor Seven')
+    expect(wrapper.text()).not.toContain('Actor Eight')
     const photos = wrapper.findAll('img.arr-credit-photo')
     expect(photos[0]!.attributes('src')).toBe('https://image.tmdb.org/t/p/w185/one.jpg')
 
@@ -151,7 +154,7 @@ describe('arr/[id] page', () => {
     expect(links.some(l => l.text().includes('Actor Three'))).toBe(false)
   })
 
-  it('shows Google and TheMovieDB links in order, TheMovieDB only when tmdb id is known', async () => {
+  it('shows TheMovieDB and Google links in order, TheMovieDB only when tmdb id is known', async () => {
     ;(globalThis as any).useNbapi = vi.fn(() => ({
       getFilm: vi.fn().mockResolvedValue({ ...mockFilm, tmdb: JSON.stringify({ id: 777 }) }),
       getFilmakt: vi.fn().mockResolvedValue([mockFilm]),
@@ -160,9 +163,9 @@ describe('arr/[id] page', () => {
     await flushPromises()
     const linkTags = wrapper.findAll('.arr-links .arr-link-tag')
     expect(linkTags).toHaveLength(2)
-    expect(linkTags[0]!.text()).toBe('Google')
-    expect(linkTags[1]!.text()).toBe('TheMovieDB')
-    expect(linkTags[1]!.attributes('href')).toBe('https://www.themoviedb.org/movie/777')
+    expect(linkTags[0]!.text()).toBe('TheMovieDB')
+    expect(linkTags[0]!.attributes('href')).toBe('https://www.themoviedb.org/movie/777')
+    expect(linkTags[1]!.text()).toBe('Google')
   })
 
   it('omits TheMovieDB link when there is no tmdb data', async () => {

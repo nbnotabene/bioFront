@@ -1,7 +1,7 @@
 import { mount, flushPromises } from '@vue/test-utils'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import IndexPage from '../index.vue'
-import type { Filmakt } from '~/composables/useNbapi'
+import type { Filmakt } from '~/composables/useBiofilm'
 
 const mockEvents = [
   { arr_nr: 1, ainfo_nr: 'A1', title: 'Film One', start: '2026-01-10T18:00:00+01:00', poster_url: null },
@@ -12,8 +12,8 @@ const mockEvents = [
 describe('index page', () => {
   beforeEach(() => {
     localStorage.clear()
-    ;(globalThis as any).useNbapi = vi.fn(() => ({
-      getFilmakt: vi.fn().mockResolvedValue(mockEvents),
+    ;(globalThis as any).useBiofilm = vi.fn(() => ({
+      loadFilmakt: vi.fn().mockResolvedValue(mockEvents),
     }))
   })
 
@@ -39,10 +39,10 @@ describe('index page', () => {
   })
 
   it('shows an error with a retry button when the fetch fails, and retries on click', async () => {
-    const getFilmakt = vi.fn()
+    const loadFilmakt = vi.fn()
       .mockRejectedValueOnce(new Error('timeout'))
       .mockResolvedValueOnce(mockEvents)
-    ;(globalThis as any).useNbapi = vi.fn(() => ({ getFilmakt }))
+    ;(globalThis as any).useBiofilm = vi.fn(() => ({ loadFilmakt }))
 
     const wrapper = mount(IndexPage)
     await flushPromises()
@@ -51,7 +51,7 @@ describe('index page', () => {
 
     await wrapper.find('.retry-button').trigger('click')
     await flushPromises()
-    expect(getFilmakt).toHaveBeenCalledTimes(2)
+    expect(loadFilmakt).toHaveBeenCalledTimes(2)
     expect(wrapper.find('.arr-notfound').exists()).toBe(false)
     expect(wrapper.findAll('.film-card-link')).toHaveLength(2)
   })
@@ -64,27 +64,28 @@ describe('index page', () => {
     it('refetches when the page becomes visible after 06:30 the next day, keeping the old list on failure', async () => {
       vi.useFakeTimers({ toFake: ['Date'] })
       vi.setSystemTime(new Date(2026, 0, 9, 23, 0))
-      const getFilmakt = vi.fn()
+      const loadFilmakt = vi.fn()
         .mockResolvedValueOnce(mockEvents)
         .mockRejectedValueOnce(new Error('offline'))
         .mockResolvedValueOnce([mockEvents[0]])
-      ;(globalThis as any).useNbapi = vi.fn(() => ({ getFilmakt }))
+      ;(globalThis as any).useBiofilm = vi.fn(() => ({ loadFilmakt }))
 
       const wrapper = mount(IndexPage, { attachTo: document.body })
       await flushPromises()
-      expect(getFilmakt).toHaveBeenCalledTimes(1)
+      expect(loadFilmakt).toHaveBeenCalledTimes(1)
 
       // Still before 06:30: nothing to do
       vi.setSystemTime(new Date(2026, 0, 10, 6, 0))
       document.dispatchEvent(new Event('visibilitychange'))
       await flushPromises()
-      expect(getFilmakt).toHaveBeenCalledTimes(1)
+      expect(loadFilmakt).toHaveBeenCalledTimes(1)
 
       // After 06:30, refresh fails: the old programme stays, no error/spinner
       vi.setSystemTime(new Date(2026, 0, 10, 7, 0))
       document.dispatchEvent(new Event('visibilitychange'))
       await flushPromises()
-      expect(getFilmakt).toHaveBeenCalledTimes(2)
+      expect(loadFilmakt).toHaveBeenCalledTimes(2)
+      expect(loadFilmakt).toHaveBeenLastCalledWith({ force: true })
       expect(wrapper.findAll('.film-card-link')).toHaveLength(2)
       expect(wrapper.find('.arr-notfound').exists()).toBe(false)
       expect(wrapper.find('.arr-loading').exists()).toBe(false)
@@ -92,13 +93,13 @@ describe('index page', () => {
       // Next attempt succeeds and replaces the programme
       window.dispatchEvent(new Event('focus'))
       await flushPromises()
-      expect(getFilmakt).toHaveBeenCalledTimes(3)
+      expect(loadFilmakt).toHaveBeenCalledTimes(3)
       expect(wrapper.findAll('.film-card-link')).toHaveLength(1)
 
       // Fresh again: no further fetches
       document.dispatchEvent(new Event('visibilitychange'))
       await flushPromises()
-      expect(getFilmakt).toHaveBeenCalledTimes(3)
+      expect(loadFilmakt).toHaveBeenCalledTimes(3)
 
       wrapper.unmount()
     })

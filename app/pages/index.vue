@@ -23,11 +23,10 @@
 <script setup lang="ts">
 import DataView from 'primevue/dataview'
 import ProgressSpinner from 'primevue/progressspinner'
-import type { Filmakt } from '~/composables/useNbapi'
 import { groupFilmakt, type FilmGroup } from '~/composables/useFilmGroups'
 import { useDailyRefresh } from '~/composables/useDailyRefresh'
 
-const { getFilmakt } = useNbapi()
+const { loadFilmakt } = useBiofilm()
 
 const filmGroups = ref<FilmGroup[]>([])
 const pending = ref(true)
@@ -43,8 +42,7 @@ async function load () {
   pending.value = true
   error.value = false
   try {
-    const events: Filmakt[] = await getFilmakt()
-    filmGroups.value = groupFilmakt(events)
+    filmGroups.value = groupFilmakt(await loadFilmakt())
     markLoaded()
   } catch {
     error.value = true
@@ -56,7 +54,7 @@ async function load () {
 // Background daily refresh: no spinner, and keep showing the current programme if it fails.
 async function refresh () {
   try {
-    filmGroups.value = groupFilmakt(await getFilmakt())
+    filmGroups.value = groupFilmakt(await loadFilmakt({ force: true }))
     error.value = false
     markLoaded()
   } catch {}

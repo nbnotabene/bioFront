@@ -1,6 +1,6 @@
 # Deploy-plan — bioFront
 
-bioFront er en statisk genereret Nuxt-site (`npx nuxi generate` → `.output/public`). Al filmdata/infosider hentes client-side fra `nbapi` ved runtime, så det statiske build indeholder ingen bagt-ind data — samme build-artefakt kan bruges til begge deploy-mål nedenfor.
+bioFront er en statisk genereret Nuxt-site (`npx nuxi generate` → `.output/public`). Al filmdata/infosider hentes client-side fra toolsapi's `biofilm` (`https://tools.nbinfo.eu/biofilm`) ved runtime, så det statiske build indeholder ingen bagt-ind data — samme build-artefakt kan bruges til begge deploy-mål nedenfor.
 
 Der deployes til **2 sites**, uafhængigt af hinanden:
 
@@ -92,14 +92,14 @@ statichost.eu (https://builder.statichost.eu/) bygger og hoster sitet ud fra Git
 ### Konfiguration
 - Statichost-site: `biofront` (`https://biofront.statichost.page`), koblet til GitHub-repo `nbnotabene/bioFront`, branch `main`.
 - Build er defineret i `statichost.yml` i repo-roden (image `node:24.x`, command `npm install && npx nuxi generate`, public `.output/public`).
-- `NUXT_PUBLIC_NBAPI_API_BASE` behøver ikke sættes — default i `nuxt.config.ts` peger på `https://nbapi.nbinfo.eu`.
+- `NUXT_PUBLIC_BIOFILM_API_BASE` behøver ikke sættes — default i `nuxt.config.ts` peger på `https://tools.nbinfo.eu/biofilm`.
 - Custom domains `svanekebio.dk` og `www.svanekebio.dk` er tilføjet i statichost. Statichost udsteder selv Let's Encrypt-certifikater og redirecter `www` → `https://svanekebio.dk` (301).
 
 ### Build-triggere
 Et build startes med et `POST` til `https://builder.statichost.eu/biofront` (statichost bygger altid den konfigurerede branch, `main`). Det sker fra:
 
 1. **GitHub Action** `.github/workflows/statichost.yml` — kører kun ved push til `main` (kan også startes manuelt under *Actions → Deploy to statichost → Run workflow*). Der bruges bevidst **ikke** en GitHub-webhook: webhooks kan ikke filtreres på branch, så push til `develop` ville også trigge et build.
-2. **Dagligt cron-job** på serveren (crontab for `nb`), kl. 06:15 — lige efter nbapi's kultunaut-sync kl. 06:00, så nye film får prerenderede `/arr/{arr_nr}`-sider (se nedenfor):
+2. **Dagligt cron-job** på serveren (crontab for `nb`), kl. 06:15 — lige efter kultunaut-syncen kl. 06:00, så nye film får prerenderede `/arr/{arr_nr}`-sider (se nedenfor):
    ```
    15 6 * * * echo "$(date -Is) $(/usr/bin/curl -fsS -X POST -m60 https://builder.statichost.eu/biofront 2>&1)" >> /home/nb/statichost_biofront.log
    ```
@@ -110,7 +110,7 @@ Build-URL'en er uautentificeret (alle der kender sitenavnet kan starte et build)
 Om et nyt build er live kan ses i `https://svanekebio.dk/_nuxt/builds/latest.json` (`timestamp` = build-tidspunkt i ms).
 
 ### Ruter der ikke fandtes ved build
-Build-tiden henter `/filmakt` og `/pages` fra nbapi og prerenderer en fil pr. `/arr/{arr_nr}` og `/pages/{slug}`. En film oprettet *efter* seneste build har ingen fil: statichost serverer `404.html` (som er Nuxt-appen), så siden vises korrekt for brugeren, men med HTTP-status **404** — relevant for søgemaskiner og link-previews (fx Facebook). Data er aldrig forældet, da alt hentes client-side; det daglige cron-build sørger for at nye film-URL'er får status 200.
+Build-tiden henter `/filmakt` og `/pages` fra biofilm og prerenderer en fil pr. `/arr/{arr_nr}` og `/pages/{slug}`. En film oprettet *efter* seneste build har ingen fil: statichost serverer `404.html` (som er Nuxt-appen), så siden vises korrekt for brugeren, men med HTTP-status **404** — relevant for søgemaskiner og link-previews (fx Facebook). Data er aldrig forældet, da alt hentes client-side; det daglige cron-build sørger for at nye film-URL'er får status 200.
 
 ### Deploy-trin (release til produktion)
 
@@ -131,7 +131,7 @@ Pushet til `main` trigger automatisk build+deploy på statichost.eu. Følg build
 ```bash
 curl -sI https://svanekebio.dk | head -1
 ```
-Tjek visuelt at forside (filmgrid), en arrangementsside (`/arr/{arr_nr}`) og en infoside (`/pages/{slug}`) loader data korrekt fra `nbapi`.
+Tjek visuelt at forside (filmgrid), en arrangementsside (`/arr/{arr_nr}`) og en infoside (`/pages/{slug}`) loader data korrekt fra biofilm.
 
 ### Rollback
 Revert/reset `main` til forrige commit og push — statichost.eu bygger automatisk igen ud fra den nye HEAD:
@@ -162,13 +162,23 @@ git push origin main
 
 ---
 
-## Fælles forudsætning: nbapi
+## Fælles forudsætning: biofilm (toolsapi)
 
-Begge sites henter data fra `https://nbapi.nbinfo.eu` ved runtime. Før release skal det sikres at:
+Alle sites henter data fra `https://tools.nbinfo.eu/biofilm` ved runtime. Før release skal det sikres at:
 
-- `nbapi` kører og svarer på `/filmakt` og `/pages`
-- CORS på `nbapi` tillader både `https://local.svanekebio.dk` og `https://svanekebio.dk` (allerede konfigureret, jf. README.md)
-- Hvis `ainfo_nr`-gruppering er en del af releasen: migration `/home/nb/www/nbapi/migrations/2026-07-09_filmakt_add_ainfo_nr.sql` skal være kørt mod databasen, og `nbapi`-servicen genstartet — **inden** frontend-releasen, ellers fejler gruppering af visninger på begge sites.
+- biofilm kører og svarer på `/filmakt` og `/pages`
+- CORS (`CORS_ORIGINS` i `/home/nb/www/toolsapi/.env`) tillader sitets origin (svanekebio.dk, local.svanekebio.dk og biofront.statichost.page er konfigureret)
+- biofilms kultunaut-sync-cron kører (og nbapi's er slået fra), så `/filmakt` er opdateret — se `/home/nb/www/toolsapi/services/biofilm/README.md`
+
+## Preview: local.svaneke.net (branch `toolsapi`)
+
+Udviklingsbranchen `toolsapi` vises på `https://local.svaneke.net`, adskilt fra drift:
+
+- Kode i git-worktree'en `/home/nb/www/bioFront-toolsapi` (branch `toolsapi`); `/home/nb/www/bioFront` (`develop`, local.svanekebio.dk) røres ikke.
+- nginx: `/etc/nginx/sites-available/local.svaneke.net` serverer worktree'ens `.output/public`; certifikat `--cert-name local.svaneke.net` (webroot). Ikke bag Cloudflare.
+- Data: samme origin via nginx-proxy `location /biofilm/` → toolsapi's Traefik (`127.0.0.1:8081`, Host `tools.nbinfo.eu`), **kun GET/HEAD** (`limit_except GET`), så preview'et kan aldrig skrive til databasen og kræver ingen CORS-ændring i toolsapi.
+- Byg: `cd /home/nb/www/bioFront-toolsapi && npm test && NUXT_PUBLIC_BIOFILM_API_BASE=https://local.svaneke.net/biofilm npx nuxi generate` (prerender henter fra `https://tools.nbinfo.eu/biofilm`).
+- Push af `toolsapi` deployer ikke: Action'en kører kun på `main`.
 
 ---
 

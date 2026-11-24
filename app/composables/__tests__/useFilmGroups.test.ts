@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { groupFilmakt } from '../useFilmGroups'
-import type { Filmakt } from '../useNbapi'
+import type { Filmakt } from '../useBiofilm'
 
 function film (overrides: Partial<Filmakt>): Filmakt {
   return {

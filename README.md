@@ -4,16 +4,16 @@
 
 https://svanekebio.dk er et responsive **website**, der viser kommende film i biografen — **Svaneke Bio** — og diverse info om og fra biografen.
 
-**bioFront** er den nye system-version (version 2), der realiserer dette website, med samme visuelle udtryk som system-version 1 (`/home/nb/www/kultlib`), men bygget som en Nuxt + Vue + PrimeVue + Tailwind SPA der henter sit indhold fra den levende `nbapi` backend i stedet for at blive genereret server-side med Jinja.
+**bioFront** er den nye system-version (version 2), der realiserer dette website, med samme visuelle udtryk som system-version 1 (`/home/nb/www/kultlib`), men bygget som en Nuxt + Vue + PrimeVue + Tailwind SPA der henter sit indhold fra toolsapi's **biofilm**-service (afløseren for `nbapi`) i stedet for at blive genereret server-side med Jinja.
 
 ## Arkitektur
 
 Stack: **Nuxt 4** (SSG shell) · **Vue 3** (Composition API) · **PrimeVue** (UI-komponenter) · **Tailwind CSS** (utility styling)
 
-Siden bygges statisk (`npx nuxi generate`), men alt filmdata og alle infosider **hentes client-side ved runtime** fra `nbapi` — ikke bagt ind i build'et. Det betyder:
+Siden bygges statisk (`npx nuxi generate`), men alt filmdata og alle infosider **hentes client-side ved runtime** fra biofilm — ikke bagt ind i build'et. Det betyder:
 
 - Statisk hostbar (ingen server-runtime nødvendig for selve frontend'en)
-- Indhold er altid friskt — ingen rebuild nødvendig når en film eller side ændres i `nbapi`
+- Indhold er altid friskt — ingen rebuild nødvendig når en film eller side ændres i biofilm
 - Dynamiske ruter som `/arr/{arr_nr}` behøver ikke være kendt ved build-tid
 
 ```
@@ -30,31 +30,29 @@ npx nuxi generate
                 │                               │
                 └───────────────┬───────────────┘
                                 ▼
-                  Browser fetches from nbapi at runtime
+                  Browser fetches from biofilm at runtime
                   • GET /filmakt, /filmakt/{arr_nr}
                   • GET /pages, /pages/{id}
 ```
 
-Design-arven (farver, layout, header/overlay-menu) stammer fra `/home/nb/www/kultlib/webroot/css/*.css` og en tidligere Vue+Vite-prototype i `/home/nb/www/kultlib/frontend/vue/`, som bioFront er porteret fra — samme CSS-klasser og komponentstruktur, men flyttet til Nuxt's fil-baserede routing og koblet på `nbapi` i stedet for statiske JSON-filer.
+Design-arven (farver, layout, header/overlay-menu) stammer fra `/home/nb/www/kultlib/webroot/css/*.css` og en tidligere Vue+Vite-prototype i `/home/nb/www/kultlib/frontend/vue/`, som bioFront er porteret fra — samme CSS-klasser og komponentstruktur, men flyttet til Nuxt's fil-baserede routing og koblet på API'et (nu biofilm) i stedet for statiske JSON-filer.
 
-## Datakilde: nbapi
+## Datakilde: biofilm (toolsapi)
 
-API'et er dokumenteret i `/home/nb/www/nbapi/README.md` og køres på `https://nbapi.nbinfo.eu` (docs: `https://nbapi.nbinfo.eu/docs`). `GET`-endpoints er åbne for alle origins (CORS tilladt for `https://local.svanekebio.dk` og `https://svanekebio.dk`); skrivende endpoints er intranet- og token-begrænsede og bruges ikke af bioFront.
+API'et er dokumenteret i `/home/nb/www/toolsapi/services/biofilm/README.md` og køres på `https://tools.nbinfo.eu/biofilm` (docs: `https://tools.nbinfo.eu/biofilm/docs`). `GET`-endpoints er åbne (CORS tilladt for `https://svanekebio.dk`, `https://local.svanekebio.dk` og `https://biofront.statichost.page`); skrivende endpoints kræver SSO-superadmin og bruges ikke af bioFront.
 
 | Endpoint | Bruges til |
 |---|---|
-| `GET /filmakt` | Filmoversigt (forside) |
-| `GET /filmakt/{arr_nr}` | Enkelt film (arrangementsside) |
-| `GET /pages` | Liste af infosider |
-| `GET /pages/{id}` | (ikke brugt direkte — sider slås op på `fname`) |
+| `GET /filmakt` | Alle kommende visninger: forside **og** arrangementsside (filmen findes på `arr_nr` i listen) |
+| `GET /pages` | Infosider |
 
-Infosider slås op i frontend på deres `fname`-slug (fx `omBio.html` → route `/pages/omBio`), matchende den navngivningskonvention `nbapi` allerede bruger.
+`app/composables/useBiofilm.ts` cacher begge svar for hele sidevisningen (én forespørgsel pr. endpoint, deles mellem sider) og henter igen, når data er fra før seneste kl. 06:30. `GET /filmakt/{arr_nr}` og `GET /pages/{id}` findes, men bruges ikke.
+
+Infosider slås op i frontend på deres `fname`-slug (fx `omBio.html` → route `/pages/omBio`).
 
 ### Gruppering af visninger pr. film (`ainfo_nr`)
 
-Hver række i `/filmakt` er én enkelt visning (ét `arr_nr` = én dato/tid). Flere visninger af samme film deler samme `ainfo_nr` (Kultunauts arrangements-id), mens `ainfo_nr = null` betyder et selvstændigt arrangement uden søsterrækker. `app/composables/useFilmGroups.ts` grupperer `/filmakt`-listen efter `ainfo_nr`, så forsiden viser ét filmkort med alle visningstidspunkter i stedet for ét kort pr. visning. Arrangementssiden (`arr/[id].vue`) gør det samme: når den hentede film har en `ainfo_nr`, hentes hele `/filmakt`-listen igen og filtreres til de rækker der deler `ainfo_nr`, for at vise alle datoer.
-
-> **Bemærk:** `ainfo_nr` skal eksponeres af `nbapi`s `/filmakt`-endpoint. Se `/home/nb/www/nbapi/migrations/2026-07-09_filmakt_add_ainfo_nr.sql` — denne skal køres mod databasen (og nbapi-servicen genstartes), før gruppering virker i produktion.
+Hver række i `/filmakt` er én enkelt visning (ét `arr_nr` = én dato/tid). Flere visninger af samme film deler samme `ainfo_nr` (Kultunauts arrangements-id), mens `ainfo_nr = null` betyder et selvstændigt arrangement uden søsterrækker. `app/composables/useFilmGroups.ts` grupperer `/filmakt`-listen efter `ainfo_nr`, så forsiden viser ét filmkort med alle visningstidspunkter i stedet for ét kort pr. visning. Arrangementssiden (`arr/[id].vue`) gør det samme: den finder filmen i den (cachede) `/filmakt`-liste og viser alle rækker for samme film (`sameFilm()`: samme `ainfo_nr`, eller samme titel når `ainfo_nr` mangler).
 
 ## Projektstruktur
 
@@ -69,7 +67,7 @@ app/
     InfoBanner.vue             # dismissable infobanner (localStorage)
     VideoEmbed.vue              # Vimeo/YouTube trailer-embed m. dobbeltklik-fuldskærm
   composables/
-    useNbapi.ts               # typed fetch-helpers mod nbapi (getFilmakt, getFilm, getPages, getPage)
+    useBiofilm.ts             # cachede fetch-helpers mod biofilm (loadFilmakt, loadPages) + typer
     useFilmGroups.ts           # grupperer /filmakt-rækker pr. ainfo_nr (flere visninger = ét filmkort)
   pages/
     index.vue                 # forside: filmgrid (PrimeVue DataView)
@@ -102,15 +100,17 @@ npx serve .output/public
 
 ## Konfiguration
 
-`nbapi`-base-URL'en er sat i `nuxt.config.ts` under `runtimeConfig.public.nbapi.apiBase` (default `https://nbapi.nbinfo.eu`) og kan overstyres uden rebuild via miljøvariablen:
+biofilm-base-URL'en er sat i `nuxt.config.ts` under `runtimeConfig.public.biofilm.apiBase` (default `https://tools.nbinfo.eu/biofilm`) og kan overstyres via miljøvariablen:
 
 ```bash
-NUXT_PUBLIC_NBAPI_API_BASE=https://nbapi.nbinfo.eu npm run dev
+NUXT_PUBLIC_BIOFILM_API_BASE=https://tools.nbinfo.eu/biofilm npm run dev
 ```
+
+Prerender-routes hentes ved build altid fra en absolut URL: `BIOFILM_PRERENDER_BASE` eller default'en.
 
 ## Test-cases
 
-Testene ligger som `__tests__/`-mapper ved siden af den kode de dækker, og kører med Vitest + `@vue/test-utils` (happy-dom). Ingen af dem rammer det rigtige `nbapi` — `useNbapi()` mockes.
+Testene ligger som `__tests__/`-mapper ved siden af den kode de dækker, og kører med Vitest + `@vue/test-utils` (happy-dom). Ingen af dem rammer det rigtige biofilm — `useBiofilm()` mockes (og `$fetch` i `useBiofilm.test.ts`).
 
 | Fil | Dækker |
 |---|---|

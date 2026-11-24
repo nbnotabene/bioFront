@@ -1,17 +1,17 @@
 import { mount, flushPromises } from '@vue/test-utils'
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import SlugPage from '../[slug].vue'
-import type { NbapiPage } from '~/composables/useNbapi'
+import type { Page } from '~/composables/useBiofilm'
 
 const mockPages = [
   { id: 1, title: 'Om biografen', fname: 'omBio.html', pagehtml: '<p>Om Svaneke Bio</p>', img: null, created_at: '2026-01-01T00:00:00' },
   { id: 2, title: 'Bliv medlem', fname: 'medlem.html', pagehtml: '<p>Meld dig ind</p>', img: null, created_at: '2026-01-01T00:00:00' },
-] as NbapiPage[]
+] as Page[]
 
 describe('pages/[slug] page', () => {
   beforeEach(() => {
-    ;(globalThis as any).useNbapi = vi.fn(() => ({
-      getPages: vi.fn().mockResolvedValue(mockPages),
+    ;(globalThis as any).useBiofilm = vi.fn(() => ({
+      loadPages: vi.fn().mockResolvedValue(mockPages),
     }))
   })
 

@@ -2,7 +2,7 @@ import { mount } from '@vue/test-utils'
 import { describe, it, expect } from 'vitest'
 import FilmCard from '../FilmCard.vue'
 import type { FilmGroup } from '~/composables/useFilmGroups'
-import type { Filmakt } from '~/composables/useNbapi'
+import type { Filmakt } from '~/composables/useBiofilm'
 
 const group = {
   arr_nr: 42,

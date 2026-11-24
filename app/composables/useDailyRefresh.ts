@@ -1,4 +1,4 @@
-// Refetch data loaded before the most recent daily refresh point (06:30, just after nbapi's
+// Refetch data loaded before the most recent daily refresh point (06:30, just after the
 // 06:00 kultunaut sync), so an installed PWA or a tab left open overnight doesn't keep showing
 // yesterday's programme. Pages only fetch in onMounted, which doesn't rerun when an app is resumed.
 

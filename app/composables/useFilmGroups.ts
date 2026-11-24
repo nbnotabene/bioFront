@@ -1,4 +1,4 @@
-import type { Filmakt } from '~/composables/useNbapi'
+import type { Filmakt } from '~/composables/useBiofilm'
 
 export interface FilmGroup {
   /** arr_nr of the earliest showtime — used as the detail-page link target */

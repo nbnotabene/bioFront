@@ -22,9 +22,9 @@ const NuxtLinkStub = defineComponent({
 
 ;(globalThis as any).useRoute = vi.fn(() => ({ params: {} }))
 ;(globalThis as any).useRuntimeConfig = vi.fn(() => ({
-  public: { nbapi: { apiBase: 'https://nbapi.nbinfo.eu' } },
+  public: { biofilm: { apiBase: 'https://tools.nbinfo.eu/biofilm' } },
 }))
-;(globalThis as any).useNbapi = vi.fn()
+;(globalThis as any).useBiofilm = vi.fn()
 
 // Global component registration standing in for Nuxt's component auto-import,
 // so `<NuxtLink>` / `<InfoBanner>` / `<FilmCard>` / `<VideoEmbed>` resolve inside templates during mount.

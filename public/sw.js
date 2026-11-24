@@ -1,5 +1,5 @@
-const CACHE_NAME = 'biofront-v2';
-const API_CACHE_NAME = 'biofront-api-v2';
+const CACHE_NAME = 'biofront-v3';
+const API_CACHE_NAME = 'biofront-api-v3';
 const NETWORK_TIMEOUT_MS = 8000;
 const IMAGE_CACHE_NAME = 'biofront-images-v1';
 
@@ -61,9 +61,9 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // A. nbapi API calls -> Network-First (fallback to API cache)
+  // A. biofilm API calls (tools.nbinfo.eu/biofilm, or a same-origin /biofilm proxy) -> Network-First (fallback to API cache)
   // Essential so movie listings and showtimes are always up-to-date online
-  if (url.hostname.includes('nbapi.nbinfo.eu') || url.pathname.startsWith('/api')) {
+  if (url.pathname.startsWith('/biofilm/')) {
     event.respondWith(networkFirst(request, API_CACHE_NAME));
     return;
   }

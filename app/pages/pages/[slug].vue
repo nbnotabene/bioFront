@@ -14,19 +14,19 @@
 
 <script setup lang="ts">
 import ProgressSpinner from 'primevue/progressspinner'
-import type { NbapiPage } from '~/composables/useNbapi'
+import type { Page } from '~/composables/useBiofilm'
 
 const route = useRoute()
-const { getPages } = useNbapi()
+const { loadPages } = useBiofilm()
 
-const page = ref<NbapiPage | null>(null)
+const page = ref<Page | null>(null)
 const loading = ref(true)
 
 async function fetchPage (slug: string) {
   loading.value = true
   page.value = null
   try {
-    const pages = await getPages()
+    const pages = await loadPages()
     page.value = pages.find(p => p.fname === `${slug}.html`) || null
   } catch {
     page.value = null

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-bioFront is the frontend for https://svanekebio.dk (Svaneke Bio, a cinema). It's a Nuxt 4 + Vue 3 (Composition API) + PrimeVue + Tailwind SPA that is **statically generated** (`npx nuxi generate`) but fetches all its data **client-side at runtime** from a separate backend, `nbapi` (`https://nbapi.nbinfo.eu`, source at `/home/nb/www/nbapi`). Nothing dynamic is baked into the build — the same static build artifact is deployed to both the dev and prod sites (see `deploy.md`).
+bioFront is the frontend for https://svanekebio.dk (Svaneke Bio, a cinema). It's a Nuxt 4 + Vue 3 (Composition API) + PrimeVue + Tailwind SPA that is **statically generated** (`npx nuxi generate`) but fetches all its data **client-side at runtime** from toolsapi's **biofilm** service (`https://tools.nbinfo.eu/biofilm`, source at `/home/nb/www/toolsapi/services/biofilm`; it replaced the older `nbapi`). Nothing dynamic is baked into the build — the same static build artifact is deployed to both the dev and prod sites (see `deploy.md`).
 
 This is a rewrite/port of an older Jinja-based site (`/home/nb/www/kultlib`) — the CSS classes, component structure, and visual design intentionally match that original (`/home/nb/www/kultlib/webroot/css/*.css` and a prior Vue+Vite prototype at `/home/nb/www/kultlib/frontend/vue/`).
 
@@ -21,18 +21,18 @@ npx serve .output/public   # serve the static build locally
 
 Override the API base without rebuilding:
 ```bash
-NUXT_PUBLIC_NBAPI_API_BASE=https://nbapi.nbinfo.eu npm run dev
+NUXT_PUBLIC_BIOFILM_API_BASE=https://tools.nbinfo.eu/biofilm npm run dev
 ```
 
 ## Architecture
 
-### Data flow: nbapi, not build-time content
+### Data flow: biofilm, not build-time content
 
-There is no CMS/content layer in this repo. All film and info-page data comes from `nbapi` via `app/composables/useNbapi.ts` (`getFilmakt`, `getFilm`, `getPages`, `getPage`), typed by the `Filmakt` and `NbapiPage` interfaces defined there. Pages fetch in `onMounted`/`watch` (not `useAsyncData`/SSR fetch), track their own `loading`/`pending` ref, and render a not-found state on failure — see `app/pages/index.vue`, `app/pages/arr/[id].vue`, `app/pages/pages/[slug].vue` for the pattern.
+There is no CMS/content layer in this repo. All film and info-page data comes from biofilm (GET only) via `app/composables/useBiofilm.ts` (`loadFilmakt`, `loadPages`), typed by the `Filmakt` and `Page` interfaces defined there. It keeps a module-level cache shared by all pages: one `/filmakt` request serves both the homepage and film pages (the film page finds its row by `arr_nr` in that list — there's no per-film request), one `/pages` request serves info pages; the cache is refetched once it's from before the latest 06:30 (`isStale` in `useDailyRefresh.ts`) and dropped on failure. The homepage also refetches (`loadFilmakt({ force: true })`) when it becomes visible again after 06:30. Pages call these in `onMounted`/`watch` (not `useAsyncData`/SSR fetch), track their own `loading`/`pending` ref, and render a not-found state on failure — see `app/pages/index.vue`, `app/pages/arr/[id].vue`, `app/pages/pages/[slug].vue` for the pattern.
 
-Info pages are looked up by `fname` slug (e.g. `omBio.html` → route `/pages/omBio`), not by numeric id — `GET /pages/{id}` exists in the API but isn't used directly.
+Info pages are looked up by `fname` slug (e.g. `omBio.html` → route `/pages/omBio`), not by numeric id — `GET /pages/{id}` and `GET /filmakt/{arr_nr}` exist in the API but aren't used.
 
-`nuxt.config.ts` has a `nitro:config` hook that fetches `/pages` and `/filmakt` from nbapi at **build time** to populate `nitro.prerender.routes` (so `/arr/{arr_nr}` and `/pages/{slug}` routes exist as static files after `nuxi generate`), independent of the client-side runtime fetching described above. If nbapi is unreachable during a build, this fails soft (`failOnError: false`, try/catch with a warning) rather than failing the build.
+`nuxt.config.ts` has a `nitro:config` hook that fetches `/pages` and `/filmakt` from biofilm at **build time** (always from an absolute URL: `BIOFILM_PRERENDER_BASE` or the default, regardless of the browser's `apiBase`) to populate `nitro.prerender.routes` (so `/arr/{arr_nr}` and `/pages/{slug}` routes exist as static files after `nuxi generate`), independent of the client-side runtime fetching described above. If biofilm is unreachable during a build, this fails soft (`failOnError: false`, try/catch with a warning) rather than failing the build.
 
 ### Film grouping by `ainfo_nr` / title fallback
 
@@ -40,7 +40,7 @@ Each `/filmakt` row is a single screening (one `arr_nr` = one date/time). Multip
 
 `ainfo_nr` is sometimes missing from the source data for a given film (seen for e.g. "Dobbeltspil"). `sameFilm()`/`groupFilmakt()` handle this with a fallback: rows sharing an `ainfo_nr` are always grouped by that; rows where **both** sides lack `ainfo_nr` are grouped by normalized (trimmed, lowercased) title instead; a row with an `ainfo_nr` is never merged into a title-only group. Untitled rows with no `ainfo_nr` each stay standalone. This same logic (`sameFilm`) is reused on the arrangement page (`arr/[id].vue`) to find and list all sibling showtimes of the film currently being viewed.
 
-If touching this: `ainfo_nr` must be exposed by nbapi's `/filmakt` endpoint (migration `/home/nb/www/nbapi/migrations/2026-07-09_filmakt_add_ainfo_nr.sql`); without it, grouping falls back to title-matching only.
+If touching this: grouping relies on biofilm's `/filmakt` exposing `ainfo_nr`; without it, grouping falls back to title-matching only.
 
 ### Film "extras" (badges/icons)
 
@@ -59,7 +59,8 @@ app/
     InfoBanner.vue             # dismissable info banner (persisted to localStorage)
     VideoEmbed.vue              # Vimeo/YouTube trailer embed, dblclick-to-fullscreen
   composables/
-    useNbapi.ts               # typed fetch helpers + Filmakt/NbapiPage types (the API contract)
+    useBiofilm.ts             # cached biofilm fetches + Filmakt/Page types (the API contract)
+    useDailyRefresh.ts         # 06:30 staleness rule + refetch on visibility/focus
     useFilmGroups.ts           # groups /filmakt rows into one card per film
     useFilmExtras.ts            # resolves Filmakt.extra tags to icon metadata
   pages/
@@ -68,10 +69,10 @@ app/
     pages/[slug].vue              # info page, slug = fname without .html
   plugins/sw.client.ts        # registers /sw.js service worker, client-only
   assets/css/                 # tailwind.css (entrypoint) + base-styles.css + bio.css (ported v1 theme)
-test/setup.ts                # stubs Nuxt auto-imports (ref/computed/useRoute/useNbapi/NuxtLink/...) for unit tests
+test/setup.ts                # stubs Nuxt auto-imports (ref/computed/useRoute/useBiofilm/NuxtLink/...) for unit tests
 ```
 
-Tests live in `__tests__/` next to the code they cover, run with Vitest + `@vue/test-utils` (happy-dom). None hit the real nbapi — `useNbapi()` is mocked/stubbed via `test/setup.ts`, which stands in for Nuxt's auto-import and component-auto-registration machinery (a full Nuxt runtime isn't booted for tests).
+Tests live in `__tests__/` next to the code they cover, run with Vitest + `@vue/test-utils` (happy-dom). None hit the real biofilm — pages get a stubbed `useBiofilm()` (`test/setup.ts`, per-test mocks), and `useBiofilm.test.ts` stubs `$fetch`; which stands in for Nuxt's auto-import and component-auto-registration machinery (a full Nuxt runtime isn't booted for tests).
 
 ### Explicitly not used
 

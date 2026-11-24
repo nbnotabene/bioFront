@@ -133,11 +133,11 @@ import Tag from 'primevue/tag'
 import Divider from 'primevue/divider'
 import ProgressSpinner from 'primevue/progressspinner'
 import FilmExtraIcons from '~/components/FilmExtraIcons.vue'
-import type { Filmakt } from '~/composables/useNbapi'
+import type { Filmakt } from '~/composables/useBiofilm'
 import { sameFilm } from '~/composables/useFilmGroups'
 
 const route = useRoute()
-const { getFilm, getFilmakt } = useNbapi()
+const { loadFilmakt } = useBiofilm()
 
 const id = ref(route.params.id as string)
 const data = ref<Filmakt | null>(null)
@@ -184,16 +184,15 @@ async function fetchData (arrId: string) {
   data.value = null
   showtimes.value = []
   try {
-    const film = await getFilm(arrId)
+    // The film comes from the shared /filmakt list (already loaded when coming from the homepage)
+    const all = await loadFilmakt()
+    const film = all.find(f => String(f.arr_nr) === arrId) ?? null
     data.value = film
 
-    if (film.ainfo_nr || film.title?.trim()) {
-      const all = await getFilmakt()
-      showtimes.value = all
-        .filter(f => sameFilm(f, film))
-        .sort((a, b) => a.start.localeCompare(b.start))
-    } else {
-      showtimes.value = [film]
+    if (film) {
+      showtimes.value = film.ainfo_nr || film.title?.trim()
+        ? all.filter(f => sameFilm(f, film)).sort((a, b) => a.start.localeCompare(b.start))
+        : [film]
     }
   } catch {
     data.value = null

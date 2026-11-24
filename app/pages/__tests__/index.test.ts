@@ -1,5 +1,5 @@
 import { mount, flushPromises } from '@vue/test-utils'
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import IndexPage from '../index.vue'
 import type { Filmakt } from '~/composables/useNbapi'
 
@@ -54,5 +54,53 @@ describe('index page', () => {
     expect(getFilmakt).toHaveBeenCalledTimes(2)
     expect(wrapper.find('.arr-notfound').exists()).toBe(false)
     expect(wrapper.findAll('.film-card-link')).toHaveLength(2)
+  })
+
+  describe('daily refresh', () => {
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    it('refetches when the page becomes visible after 06:30 the next day, keeping the old list on failure', async () => {
+      vi.useFakeTimers({ toFake: ['Date'] })
+      vi.setSystemTime(new Date(2026, 0, 9, 23, 0))
+      const getFilmakt = vi.fn()
+        .mockResolvedValueOnce(mockEvents)
+        .mockRejectedValueOnce(new Error('offline'))
+        .mockResolvedValueOnce([mockEvents[0]])
+      ;(globalThis as any).useNbapi = vi.fn(() => ({ getFilmakt }))
+
+      const wrapper = mount(IndexPage, { attachTo: document.body })
+      await flushPromises()
+      expect(getFilmakt).toHaveBeenCalledTimes(1)
+
+      // Still before 06:30: nothing to do
+      vi.setSystemTime(new Date(2026, 0, 10, 6, 0))
+      document.dispatchEvent(new Event('visibilitychange'))
+      await flushPromises()
+      expect(getFilmakt).toHaveBeenCalledTimes(1)
+
+      // After 06:30, refresh fails: the old programme stays, no error/spinner
+      vi.setSystemTime(new Date(2026, 0, 10, 7, 0))
+      document.dispatchEvent(new Event('visibilitychange'))
+      await flushPromises()
+      expect(getFilmakt).toHaveBeenCalledTimes(2)
+      expect(wrapper.findAll('.film-card-link')).toHaveLength(2)
+      expect(wrapper.find('.arr-notfound').exists()).toBe(false)
+      expect(wrapper.find('.arr-loading').exists()).toBe(false)
+
+      // Next attempt succeeds and replaces the programme
+      window.dispatchEvent(new Event('focus'))
+      await flushPromises()
+      expect(getFilmakt).toHaveBeenCalledTimes(3)
+      expect(wrapper.findAll('.film-card-link')).toHaveLength(1)
+
+      // Fresh again: no further fetches
+      document.dispatchEvent(new Event('visibilitychange'))
+      await flushPromises()
+      expect(getFilmakt).toHaveBeenCalledTimes(3)
+
+      wrapper.unmount()
+    })
   })
 })

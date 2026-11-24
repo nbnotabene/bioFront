@@ -25,6 +25,7 @@ import DataView from 'primevue/dataview'
 import ProgressSpinner from 'primevue/progressspinner'
 import type { Filmakt } from '~/composables/useNbapi'
 import { groupFilmakt, type FilmGroup } from '~/composables/useFilmGroups'
+import { useDailyRefresh } from '~/composables/useDailyRefresh'
 
 const { getFilmakt } = useNbapi()
 
@@ -36,17 +37,29 @@ const infoMessage =
   'Har du lyst til at være støtte-medlem? Eller vælge din favoritfilm til visning i biografen? ' +
   'Check <a href="/pages/medlem">dette link</a>'
 
+const { markLoaded } = useDailyRefresh(refresh)
+
 async function load () {
   pending.value = true
   error.value = false
   try {
     const events: Filmakt[] = await getFilmakt()
     filmGroups.value = groupFilmakt(events)
+    markLoaded()
   } catch {
     error.value = true
   } finally {
     pending.value = false
   }
+}
+
+// Background daily refresh: no spinner, and keep showing the current programme if it fails.
+async function refresh () {
+  try {
+    filmGroups.value = groupFilmakt(await getFilmakt())
+    error.value = false
+    markLoaded()
+  } catch {}
 }
 
 onMounted(load)

@@ -1,4 +1,6 @@
 import process from 'node:process'
+import { readFile, writeFile } from 'node:fs/promises'
+import { join } from 'node:path'
 import Aura from '@primeuix/themes/aura'
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
@@ -79,6 +81,25 @@ export default defineNuxtConfig({
         } 
 	},
 	hooks: {
+		// Add a human-readable build time (Danish time) to /_nuxt/builds/latest.json, e.g.
+		// "built": "2026-11-24 14:56:20 CET". Nuxt's outdated-build check only reads `id`.
+		'nitro:init' (nitro) {
+			nitro.hooks.hook('close', async () => {
+				const file = join(nitro.options.output.publicDir, '_nuxt/builds/latest.json')
+				try {
+					const manifest = JSON.parse(await readFile(file, 'utf8'))
+					manifest.built = new Intl.DateTimeFormat('sv-SE', {
+						timeZone: 'Europe/Copenhagen',
+						year: 'numeric', month: '2-digit', day: '2-digit',
+						hour: '2-digit', minute: '2-digit', second: '2-digit',
+						timeZoneName: 'short',
+					}).format(new Date(manifest.timestamp))
+					await writeFile(file, JSON.stringify(manifest))
+				} catch (error) {
+					console.warn('Could not add build time to latest.json:', error)
+				}
+			})
+		},
 		async 'nitro:config' (nitroConfig) {
 			const apiBase = nitroConfig.runtimeConfig?.public?.nbapi?.apiBase
 				|| process.env.NUXT_PUBLIC_NBAPI_API_BASE

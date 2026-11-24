@@ -16,35 +16,40 @@ Repo: `git@github.com:nbnotabene/bioFront.git` (branch `develop` i brug nu, `mai
 ## 1. local.svanekebio.dk (dev-site via nginx)
 
 ### Status
-Nginx-config findes allerede og peger direkte på build-output:
+Nginx-config (`/etc/nginx/sites-available/local.svanekebio.dk`, symlinket i `sites-enabled`) peger direkte på build-output. Kort version:
 
 ```
-# /etc/nginx/sites-available/bio
+# /etc/nginx/sites-available/local.svanekebio.dk
+server {                                  # :80 -> ACME-challenge + redirect til https
+    listen 80;
+    server_name local.svanekebio.dk;
+    location /.well-known/acme-challenge/ { root /home/nb/www/bioFront/.output/public; }
+    location / { return 301 https://$host$request_uri; }
+}
+
 server {
     listen 443 ssl;
     server_name local.svanekebio.dk;
-    ssl_certificate /etc/letsencrypt/live/local.svanekebio.dk/fullchain.pem;
+    ssl_certificate     /etc/letsencrypt/live/local.svanekebio.dk/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/local.svanekebio.dk/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;   # SKAL med, se nedenfor
+    include snippets/cloudflare-realip.conf;           # rigtig klient-IP bag Cloudflare
 
     root /home/nb/www/bioFront/.output/public;
     index index.html;
 
-    location / {
-        try_files $uri $uri/ /200.html /index.html;
-    }
+    limit_req zone=req_per_ip burst=200 nodelay;       # zoner defineret i nginx.conf
+    limit_conn conn_per_ip 20;
 
-    # Service Worker skal ALDRIG meges/caches af browser HTTP-cache
-    location = /sw.js {
-        add_header Cache-Control "no-cache, no-store, must-revalidate";
-        expires 0;
-    }
-
-    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
-        expires max;
-        log_not_found off;
-    }
+    location / { try_files $uri $uri/ /200.html /index.html; }
+    location = /sw.js { add_header Cache-Control "no-cache, no-store, must-revalidate"; expires 0; }
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ { expires max; log_not_found off; }
 }
 ```
+
+- **Certifikat:** `certbot --cert-name local.svanekebio.dk`, webroot-authenticator (`/home/nb/www/bioFront/.output/public`), fornyes automatisk. Test med `sudo certbot renew --dry-run --cert-name local.svanekebio.dk`.
+- **`options-ssl-nginx.conf` skal inkluderes** (gælder alle :443-vhosts på serveren). Uden den arver vhosten `ssl_prefer_server_ciphers on` fra `nginx.conf`, mens default-serveren bruger certbots `off`. Cloudflare tvinger et TLS HelloRetryRequest (det sender kun en X25519MLKEM768 key share), cipher-valget skifter mellem de to runder, og OpenSSL afbryder med `illegal_parameter` → Cloudflare **525**.
+- **`try_files … /200.html`** betyder at ukendte ruter (fx nye `/arr/{arr_nr}` der ikke fandtes ved build) serveres som SPA med status 200.
 
 `dist` er desuden symlinket til `.output/public` i repo-roden. Da nginx serverer direkte fra `.output/public`, kræver et deploy blot at der bygges lokalt på serveren — ingen kopiering/rsync nødvendig.
 
@@ -84,14 +89,14 @@ statichost.eu (https://builder.statichost.eu/) bygger og hoster sitet ud fra Git
 **Byg-kommando statichost.eu skal bruge:** `npx nuxi generate`
 **Output-mappe:** `.output/public`
 
-### Forudsætninger (tjek i statichost.eu dashboard)
-- [ ] GitHub-repo `nbnotabene/bioFront` er koblet til statichost.eu-projektet for `svanekebio.dk`
-- [ ] Build-branch sat til `main`
-- [ ] Build command: `npm install && npx nuxi generate`
-- [ ] Publish/output directory: `.output/public`
-- [ ] Node-version matcher lokalt (se `package.json`/`.nvmrc` hvis relevant)
-- [ ] Miljøvariabel `NUXT_PUBLIC_NBAPI_API_BASE=https://nbapi.nbinfo.eu` sat (ellers falder den tilbage på default i `nuxt.config.ts`, som allerede peger korrekt)
-- [ ] Custom domain `svanekebio.dk` peger på statichost.eu (DNS)
+### Konfiguration
+- Statichost-site: `biofront` (`https://biofront.statichost.page`), koblet til GitHub-repo `nbnotabene/bioFront`, branch `main`.
+- Build er defineret i `statichost.yml` i repo-roden (image `node:24.x`, command `npm install && npx nuxi generate`, public `.output/public`).
+- `NUXT_PUBLIC_NBAPI_API_BASE` behøver ikke sættes — default i `nuxt.config.ts` peger på `https://nbapi.nbinfo.eu`.
+- Custom domains `svanekebio.dk` og `www.svanekebio.dk` er tilføjet i statichost. Statichost udsteder selv Let's Encrypt-certifikater og redirecter `www` → `https://svanekebio.dk` (301).
+
+### Ruter der ikke fandtes ved build
+Build-tiden henter `/filmakt` og `/pages` fra nbapi og prerenderer en fil pr. `/arr/{arr_nr}` og `/pages/{slug}`. En film oprettet *efter* seneste build har ingen fil: statichost serverer `404.html` (som er Nuxt-appen), så siden vises korrekt for brugeren, men med HTTP-status **404** — relevant for søgemaskiner og link-previews (fx Facebook). Data er aldrig forældet, da alt hentes client-side; et nyt build er kun nødvendigt for at give nye film-URL'er status 200.
 
 ### Deploy-trin (release til produktion)
 
@@ -122,6 +127,24 @@ git checkout main
 git revert <bad-commit>   # eller: git reset --hard <forrige-commit> (kun hvis main ikke er delt bredere)
 git push origin main
 ```
+
+---
+
+## DNS (Cloudflare)
+
+`svanekebio.dk` bruger Cloudflare som DNS (nameservers `kayden`/`stephane.ns.cloudflare.com`):
+
+| Record | Type | Target | Proxy |
+|---|---|---|---|
+| `svanekebio.dk` | CNAME (flattened på apex) | `biofront.statichost.page` | DNS only (grå) |
+| `www.svanekebio.dk` | CNAME | `biofront.statichost.page` | DNS only (grå) |
+| `local.svanekebio.dk` | A | serverens offentlige IP | Proxied (orange) |
+| `docs.svanekebio.dk` m.fl. | A | serverens offentlige IP | Proxied (orange) |
+
+- Statichost-records skal være **grå** (ingen Cloudflare-proxy): statichost har egne certifikater og skal selv kunne forny dem, og et ekstra TLS-/cache-lag giver kun fejlkilder (525/526, forældet `index.html`/`sw.js`).
+- Selvhostede records er **orange**: skjuler hjemme-IP'en og tager scanning/DDoS. Med `cloudflare-realip.conf` ser nginx stadig den rigtige klient-IP.
+- MX (one.com) og TXT-records på apex påvirkes ikke af CNAME-flattening.
+- Et nyt subdomæne bag Cloudflare-proxy til denne server kræver sin egen nginx-vhost + certifikat, ellers falder nginx tilbage på default-certifikatet (`local.nbinfo.dk`) → Cloudflare **526**.
 
 ---
 

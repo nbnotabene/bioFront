@@ -15,8 +15,6 @@ Repo: `git@github.com:nbnotabene/bioFront.git` (branch `develop` i brug nu, `mai
 
 ## 1. local.svanekebio.dk (dev-site via nginx)
 
-> **Midlertidigt:** under migreringen til biofilm viser local.svanekebio.dk branch `toolsapi` — se [Preview](#preview-localsvanekebiodk-viser-branch-toolsapi-midlertidigt) nedenfor.
-
 ### Status
 Nginx-config (`/etc/nginx/sites-available/local.svanekebio.dk`, symlinket i `sites-enabled`) peger direkte på build-output. Kort version:
 
@@ -43,6 +41,13 @@ server {
     limit_req zone=req_per_ip burst=200 nodelay;       # zoner defineret i nginx.conf
     limit_conn conn_per_ip 20;
 
+    location /biofilm/ {                               # biofilm samme origin, kun læsning
+        limit_except GET { deny all; }
+        proxy_pass http://127.0.0.1:8081;              # toolsapi's Traefik
+        proxy_set_header Host tools.nbinfo.eu;
+        proxy_set_header X-Forwarded-Proto https;
+    }
+
     location / { try_files $uri $uri/ /200.html /index.html; }
     location = /sw.js { add_header Cache-Control "no-cache, no-store, must-revalidate"; expires 0; }
     location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ { expires max; log_not_found off; }
@@ -51,6 +56,7 @@ server {
 
 - **Certifikat:** `certbot --cert-name local.svanekebio.dk`, webroot-authenticator (`/home/nb/www/bioFront/.output/public`), fornyes automatisk. Test med `sudo certbot renew --dry-run --cert-name local.svanekebio.dk`.
 - **`options-ssl-nginx.conf` skal inkluderes** (gælder alle :443-vhosts på serveren). Uden den arver vhosten `ssl_prefer_server_ciphers on` fra `nginx.conf`, mens default-serveren bruger certbots `off`. Cloudflare tvinger et TLS HelloRetryRequest (det sender kun en X25519MLKEM768 key share), cipher-valget skifter mellem de to runder, og OpenSSL afbryder med `illegal_parameter` → Cloudflare **525**.
+- **`location /biofilm/`**: local.svanekebio.dk henter biofilm-data via sin egen origin (`https://local.svanekebio.dk/biofilm/…` → toolsapi's Traefik på `127.0.0.1:8081`). Det undgår NAT-hairpin fra LAN'et (`tools.nbinfo.eu` er ikke bag Cloudflare, `local.svanekebio.dk` er), og `limit_except GET` betyder at sitet aldrig kan skrive til biofilm/databasen. Derfor bygges local med `NUXT_PUBLIC_BIOFILM_API_BASE=https://local.svanekebio.dk/biofilm` (se deploy-trin).
 - **`try_files … /200.html`** betyder at ukendte ruter (fx nye `/arr/{arr_nr}` der ikke fandtes ved build) serveres som SPA med status 200.
 
 `dist` er desuden symlinket til `.output/public` i repo-roden. Da nginx serverer direkte fra `.output/public`, kræver et deploy blot at der bygges lokalt på serveren — ingen kopiering/rsync nødvendig.
@@ -66,8 +72,9 @@ git pull origin develop
 # 2. Installer evt. nye/ændrede dependencies
 npm install
 
-# 3. Byg statisk
-npx nuxi generate     # output i .output/public
+# 3. Test og byg statisk (data via sitets egen /biofilm/-proxy, se ovenfor)
+npm test
+NUXT_PUBLIC_BIOFILM_API_BASE=https://local.svanekebio.dk/biofilm npx nuxi generate     # output i .output/public
 
 # 4. Verificér
 curl -sI https://local.svanekebio.dk | head -1
@@ -170,18 +177,15 @@ Alle sites henter data fra `https://tools.nbinfo.eu/biofilm` ved runtime. Før r
 
 - biofilm kører og svarer på `/filmakt` og `/pages`
 - CORS (`CORS_ORIGINS` i `/home/nb/www/toolsapi/.env`) tillader sitets origin (svanekebio.dk, local.svanekebio.dk og biofront.statichost.page er konfigureret)
-- biofilms kultunaut-sync-cron kører (og nbapi's er slået fra), så `/filmakt` er opdateret — se `/home/nb/www/toolsapi/services/biofilm/README.md`
+- biofilms kultunaut-sync-cron kører (og nbapi's er slået fra), så `/filmakt` er opdateret — se `/home/nb/www/toolsapi/services/biofilm/README.md`. Crontab for `nb`:
+  ```
+  0 6-21/3 * * * cd /home/nb/www/toolsapi && docker compose exec -T biofilm python scripts/run_kult_sync.py >> /var/log/biofilm_kult_sync.log 2>&1
+  ```
+  `docker compose exec` kører scriptet i den kørende container (ingen genstart). Bemærk: en **genstart** af biofilm-containeren kører `create_all` + `CREATE OR REPLACE VIEW filmakt` mod databasen `mytools` — tag et dump (`mysqldump --single-transaction mytools | gzip`, i `/home/nb/backups/mytools/`) før.
 
-## Preview: local.svanekebio.dk viser branch `toolsapi` (midlertidigt)
+**Redigering** (film-`extra`, `is_locked`, infosider) sker sjældent og foregår i biofilm, ikke nbapi: Swagger på `https://tools.nbinfo.eu/biofilm/docs` med et SSO-superadmin-token (`cd /home/nb/www/toolsapi && docker compose exec sso python scripts/users.py token <email>`). Læsning er åben.
 
-Mens migreringen til biofilm står på, serverer `local.svanekebio.dk` branchen `toolsapi` i stedet for `develop`:
-
-- Kode i git-worktree'en `/home/nb/www/bioFront-toolsapi` (branch `toolsapi`); `/home/nb/www/bioFront` (`develop`) røres ikke.
-- nginx (`/etc/nginx/sites-available/local.svanekebio.dk`): 443-blokkens `root` er `/home/nb/www/bioFront-toolsapi/.output/public`. Port 80's ACME-`root` er stadig `/home/nb/www/bioFront/.output/public`, da certbot fornyer via den webroot.
-- Data: samme origin via nginx-proxy `location /biofilm/` → toolsapi's Traefik (`127.0.0.1:8081`, Host `tools.nbinfo.eu`), **kun GET/HEAD** (`limit_except GET`). Preview'et kan derfor aldrig skrive til databasen, kræver ingen CORS-ændring i toolsapi og undgår NAT-hairpin fra LAN'et (`tools.nbinfo.eu` er ikke bag Cloudflare; `local.svanekebio.dk` er).
-- Byg: `cd /home/nb/www/bioFront-toolsapi && npm test && NUXT_PUBLIC_BIOFILM_API_BASE=https://local.svanekebio.dk/biofilm npx nuxi generate` (prerender henter fra `https://tools.nbinfo.eu/biofilm`). Intet nginx-reload nødvendigt.
-- Push af `toolsapi` deployer ikke: Action'en kører kun på `main`.
-- Tilbage til `develop`: sæt 443-`root` tilbage til `/home/nb/www/bioFront/.output/public`, fjern `location /biofilm/`, `nginx -t && systemctl reload nginx` (backup i `/home/nb/nginx-backup/`).
+**Rollback til nbapi:** revert biofilm-skiftet på `main` og push (Action'en bygger igen), og byt sync-cron'en tilbage til nbapi's (`0 6-21/3 * * * /home/nb/www/nbapi/scripts/sync_kult.sh >> /var/log/nbapi_kult_sync.log 2>&1`). nbapi kører stadig (dens blog-del bruges af andre), kun dens film-sync er slået fra.
 
 ---
 

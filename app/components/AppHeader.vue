@@ -6,6 +6,7 @@
         <NuxtLink to="/" @click="closeNav">Svaneke Bio - Film oversigt</NuxtLink>
         <NuxtLink to="/pages/nyt" @click="closeNav">Svaneke Bio - <b>Sidste nyt - sidste nyt!</b></NuxtLink>
         <NuxtLink to="/pages/omBio" @click="closeNav">Om Svaneke Bio</NuxtLink>
+        <NuxtLink to="/nyhedsbrev" @click="closeNav">Tilmeld dig Bio-nyheder</NuxtLink>
         <NuxtLink to="/pages/medlem" @click="closeNav">
           <span>
             Bliv medlem og få fordele!

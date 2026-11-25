@@ -51,6 +51,10 @@ export default defineNuxtConfig({
 			biofilm: {
 				// Override per build via NUXT_PUBLIC_BIOFILM_API_BASE (e.g. the local.svaneke.net preview's same-origin proxy)
 				apiBase: BIOFILM_API_BASE
+			},
+			email: {
+				// toolsapi's email service: maillist sign-up (/nyhedsbrev, /tilmeld/{id}). Override: NUXT_PUBLIC_EMAIL_API_BASE
+				apiBase: 'https://tools.nbinfo.eu/email'
 			}
 		}
 	},
@@ -109,6 +113,8 @@ export default defineNuxtConfig({
 
 			nitroConfig.prerender ||= {}
 			nitroConfig.prerender.routes ||= []
+			// Maillist sign-up pages (other lists' /tilmeld/{id} work through the SPA fallback)
+			nitroConfig.prerender.routes.push('/nyhedsbrev', '/tilmeld/1')
 
 			try {
 				const pagesResponse = await fetch(`${apiBase}/pages`, { signal: AbortSignal.timeout(5000) })
